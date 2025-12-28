@@ -50,8 +50,8 @@ jobs:
         YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}
         YT_REFRESH_TOKEN: ${{ secrets.YT_REFRESH_TOKEN }}
         # Instagram (optional)
-        IG_ACCESS_TOKEN: ${{ secrets.IG_ACCESS_TOKEN }}
-        IG_USER_ID: ${{ secrets.IG_USER_ID }}
+        INSTAGRAM_ACCESS_TOKEN: ${{ secrets.INSTAGRAM_ACCESS_TOKEN }}
+        INSTAGRAM_ACCOUNT_ID: ${{ secrets.INSTAGRAM_ACCOUNT_ID }}
         # TikTok (optional)
         TIKTOK_ACCESS_TOKEN: ${{ secrets.TIKTOK_ACCESS_TOKEN }}
         # Facebook (optional)
@@ -65,6 +65,9 @@ jobs:
         TWITTER_API_SECRET: ${{ secrets.TWITTER_API_SECRET }}
         TWITTER_ACCESS_TOKEN: ${{ secrets.TWITTER_ACCESS_TOKEN }}
         TWITTER_ACCESS_SECRET: ${{ secrets.TWITTER_ACCESS_SECRET }}
+        # VK (optional)
+        VK_ACCESS_TOKEN: ${{ secrets.VK_ACCESS_TOKEN }}
+        VK_GROUP_ID: ${{ secrets.VK_GROUP_ID }}
       run: |
         python upload_all_platforms.py
 
