@@ -168,63 +168,121 @@ def generate_scene_descriptions(story: str) -> list:
     return unique_scenes
 
 def generate_image(scene: str, idx: int) -> Path:
-    """Generate a unique law-themed image for each scene using Pollinations AI."""
+    """Generate a unique law-themed image for each scene using Pollinations AI with Flux model."""
     # Create unique seed for each image based on scene content + index
     seed = hash(scene + str(idx)) % 1000000
     
     # Determine visual style based on the current topic's era
-    # We'll use a global variable to track this
     topic_era = getattr(generate_image, 'topic_era', 'MODERN')
     
-    # Build detailed, high-quality prompt focusing on law themes
+    # IMPROVED PROMPTS: Focus on scenes, architecture, and objects rather than people
+    # This avoids deformed faces/bodies while creating stunning visuals
+    
     if topic_era == 'ANCIENT':
+        # Focus on ancient architecture, artifacts, and environments
         style_prompt = (
-            f"ancient civilization legal scene, {scene}, "
-            f"historical scrolls, stone tablets, ancient temples, "
-            f"Egyptian pyramids, Roman forums, Greek columns, "
-            f"ancient artifacts, hieroglyphics, cuneiform writing, "
-            f"beautiful women in elegant ancient attire if present, "
-            f"warm golden lighting, sandstone textures, "
-            f"archaeological atmosphere, historical accuracy, "
-            f"cinematic composition, 8k quality, masterpiece, "
-            f"beautiful ancient world, dramatic lighting, epic scale"
+            f"stunning ancient civilization scene: {scene}, "
+            # Architecture & Environment
+            f"majestic ancient temples with towering stone columns, "
+            f"intricate hieroglyphics carved in golden sandstone walls, "
+            f"grand Egyptian pyramids under dramatic desert sky, "
+            f"Roman forum with marble statues and classical architecture, "
+            f"ancient Greek acropolis with Doric columns, "
+            # Artifacts & Details
+            f"ancient scrolls with detailed cuneiform writing, "
+            f"clay tablets with legal inscriptions, "
+            f"bronze scales of justice, ancient ceremonial objects, "
+            f"ornate stone carvings depicting historical scenes, "
+            # Lighting & Atmosphere
+            f"warm golden hour lighting, dramatic shadows, "
+            f"cinematic rays of sunlight through ancient structures, "
+            f"atmospheric dust particles in air, "
+            # Quality Controls
+            f"photorealistic, ultra detailed, 8k resolution, "
+            f"professional photography, National Geographic style, "
+            f"historically accurate, museum quality, "
+            f"epic composition, wide angle view, "
+            f"sharp focus, perfect clarity, masterpiece"
         )
     elif topic_era == 'MEDIEVAL':
+        # Focus on medieval architecture, manuscripts, and settings
         style_prompt = (
-            f"medieval legal scene, {scene}, "
-            f"castle courts, medieval manuscripts, illuminated texts, "
-            f"stone castles, gothic architecture, medieval halls, "
-            f"knights, royal seals, parchment scrolls, "
-            f"beautiful women in elegant medieval gowns if present, "
-            f"candlelit atmosphere, medieval aesthetics, "
-            f"rich tapestries, stained glass windows, "
-            f"cinematic composition, 8k quality, masterpiece, "
-            f"beautiful medieval world, dramatic lighting, historical detail"
+            f"breathtaking medieval scene: {scene}, "
+            # Architecture & Environment
+            f"grand medieval castle with gothic architecture, "
+            f"stone courtroom with vaulted ceilings and arched windows, "
+            f"magnificent cathedral interior with stained glass, "
+            f"medieval great hall with wooden beams and tapestries, "
+            f"candlelit chamber with stone walls, "
+            # Artifacts & Details
+            f"illuminated manuscripts with gold leaf decoration, "
+            f"ancient parchment scrolls with wax seals, "
+            f"ornate royal throne and crown, "
+            f"medieval weapons and armor displays, "
+            f"heraldic banners and coat of arms, "
+            # Lighting & Atmosphere
+            f"warm candlelight glow, dramatic torch lighting, "
+            f"atmospheric medieval ambiance, "
+            f"soft natural light through stained glass windows, "
+            # Quality Controls
+            f"photorealistic, ultra detailed, 8k resolution, "
+            f"cinematic composition, historical accuracy, "
+            f"professional photography, museum quality, "
+            f"rich colors, perfect clarity, sharp focus, masterpiece"
         )
     else:  # MODERN
+        # Focus on modern architecture, courtrooms, and legal symbols
         style_prompt = (
-            f"modern legal scene, {scene}, "
-            f"contemporary courtroom, legal documents, justice symbols, "
-            f"modern government buildings, law libraries, "
-            f"scales of justice, gavels, legal books, "
-            f"beautiful women in professional attire if present, "
-            f"professional lighting, clean modern aesthetics, "
-            f"marble and wood textures, flags, "
-            f"cinematic composition, 8k quality, masterpiece, "
-            f"beautiful modern architecture, dramatic lighting, professional atmosphere"
+            f"impressive modern legal scene: {scene}, "
+            # Architecture & Environment
+            f"contemporary courthouse with marble columns and glass, "
+            f"modern courtroom with wooden paneling and flags, "
+            f"sleek government building with neoclassical design, "
+            f"professional law library with floor-to-ceiling bookshelves, "
+            f"elegant judicial chamber with modern furnishings, "
+            # Symbols & Details
+            f"golden scales of justice prominently displayed, "
+            f"wooden gavel on polished desk, "
+            f"leather-bound legal books and documents, "
+            f"national flags and judicial symbols, "
+            f"modern technology and displays, "
+            # Lighting & Atmosphere
+            f"professional studio lighting, clean bright atmosphere, "
+            f"natural daylight through large windows, "
+            f"sophisticated modern ambiance, "
+            # Quality Controls
+            f"photorealistic, ultra detailed, 8k resolution, "
+            f"architectural photography, professional composition, "
+            f"sharp focus, perfect clarity, pristine quality, "
+            f"contemporary design, polished aesthetic, masterpiece"
         )
     
-    safe_prompt = quote(style_prompt)
+    # Add negative prompt to avoid common issues
+    negative_prompt = (
+        "deformed, distorted, disfigured, bad anatomy, "
+        "ugly faces, bad faces, deformed bodies, "
+        "extra limbs, missing limbs, blurry, low quality, "
+        "watermark, text, signature, amateur"
+    )
     
-    # Include seed to ensure unique image
+    # Encode prompts
+    safe_prompt = quote(style_prompt)
+    safe_negative = quote(negative_prompt)
+    
+    # Build URL with enhanced parameters for Flux model
     url = (
         f"https://image.pollinations.ai/prompt/{safe_prompt}"
-        f"?width={IMAGE_WIDTH}&height={IMAGE_HEIGHT}&model={IMAGE_MODEL}&seed={seed}"
+        f"?width={IMAGE_WIDTH}&height={IMAGE_HEIGHT}"
+        f"&model={IMAGE_MODEL}"
+        f"&seed={seed}"
+        f"&nologo=true"
+        f"&enhance=true"
+        f"&negative={safe_negative}"
     )
 
     out = IMAGES_DIR / f"scene_{idx:02d}.jpg"
-    print(f"[image] Generating {topic_era.lower()} law image {idx+1}/{NUM_IMAGES}: {scene[:50]}...")
-    
+    print(f"[image] Generating stunning {topic_era.lower()} image {idx+1}/{NUM_IMAGES}...")
+    print(f"[image] Scene: {scene[:60]}...")
     
     # Retry logic with exponential backoff (longer waits for rate limits)
     max_retries = 5
@@ -233,33 +291,34 @@ def generate_image(scene: str, idx: int) -> Path:
             r = requests.get(url, timeout=180)
             r.raise_for_status()
             out.write_bytes(r.content)
-            time.sleep(2)  # Small delay between successful requests
+            print(f"[image] ✅ Image {idx+1} generated successfully!")
+            time.sleep(3)  # Slightly longer delay to ensure quality processing
             return out
         except requests.exceptions.HTTPError as e:
             # Handle 429 rate limits with much longer waits
             if e.response.status_code == 429:
                 wait_time = (attempt + 1) * 20  # 20, 40, 60, 80, 100 seconds
                 if attempt < max_retries - 1:
-                    print(f"[image] Rate limited! Retry {attempt+1}/{max_retries} (waiting {wait_time}s)")
+                    print(f"[image] ⏳ Rate limited! Retry {attempt+1}/{max_retries} (waiting {wait_time}s)")
                     time.sleep(wait_time)
                 else:
-                    print(f"[image] Failed to generate image {idx+1}: Rate limit exceeded")
+                    print(f"[image] ❌ Failed to generate image {idx+1}: Rate limit exceeded")
                     raise e
             else:
                 wait_time = (attempt + 1) * 5
                 if attempt < max_retries - 1:
-                    print(f"[image] HTTP {e.response.status_code}. Retry {attempt+1}/{max_retries} (waiting {wait_time}s)")
+                    print(f"[image] ⚠️  HTTP {e.response.status_code}. Retry {attempt+1}/{max_retries} (waiting {wait_time}s)")
                     time.sleep(wait_time)
                 else:
-                    print(f"[image] Failed to generate image {idx+1}: {e}")
+                    print(f"[image] ❌ Failed to generate image {idx+1}: {e}")
                     raise e
         except Exception as e:
             wait_time = (attempt + 1) * 5
             if attempt < max_retries - 1:
-                print(f"[image] Retry {attempt+1}/{max_retries} (waiting {wait_time}s)")
+                print(f"[image] 🔄 Retry {attempt+1}/{max_retries} (waiting {wait_time}s)")
                 time.sleep(wait_time)
             else:
-                print(f"[image] Failed to generate image {idx+1}: {e}")
+                print(f"[image] ❌ Failed to generate image {idx+1}: {e}")
                 raise e
     return out
 
