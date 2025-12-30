@@ -1,204 +1,148 @@
 """
-Generate new law topics from around the world using AI when topics.txt runs low.
+YouTube Upload Script - Updated for 2025
 
-This script:
-1. Tracks used topics in used_topics.txt
-2. When available topics drop below 20, generates 100 NEW fresh topics
-3. Ensures NO topic is EVER repeated by checking against used topics
-4. Appends new unique topics to topics.txt
+Uses refresh token from GitHub Secrets to upload videos.
 """
 
-import requests
-from urllib.parse import quote
+import os
 from pathlib import Path
+from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
+from googleapiclient.discovery import build
+from googleapiclient.http import MediaFileUpload
+import datetime
 
-def generate_new_topics(count=100, used_topics_set=None):
-    """Generate new law topics covering ancient, medieval, and modern laws from around the world."""
+def get_authenticated_service():
+    """Authenticate using refresh token from environment."""
     
-    if used_topics_set is None:
-        used_topics_set = set()
+    # Get credentials from GitHub Secrets
+    client_id = os.getenv('YT_CLIENT_ID')
+    client_secret = os.getenv('YT_CLIENT_SECRET')
+    refresh_token = os.getenv('YT_REFRESH_TOKEN')
     
-    base_url = "https://text.pollinations.ai/"
-    all_new_topics = []
-    
-    # We'll generate more than needed and filter out duplicates
-    attempts = 0
-    max_attempts = 5
-    
-    while len(all_new_topics) < count and attempts < max_attempts:
-        attempts += 1
-        print(f"[topics] Generation attempt {attempts}/{max_attempts}...")
-        
-        # Generate ancient law topics
-        ancient_system = (
-            "You are a legal historian specializing in ancient laws. "
-            f"Create a list of {count//3 + 10} unique topics about ancient laws in English. "
-            "Each topic should be short (5-10 words), fascinating and educational. "
-            "Topics should cover: Code of Hammurabi, Roman Law, Ancient Egyptian laws, "
-            "Ancient Greek laws, Mosaic Law, Ancient Chinese laws, Babylonian laws, "
-            "Ancient Indian laws (Manusmriti), Persian laws, Sumerian laws, "
-            "Phoenician laws, Hittite laws, Assyrian laws, Aztec laws, Inca laws, "
-            "Maya laws, Ancient Japanese laws, Korean laws, Vietnamese laws. "
-            "Be creative and diverse. Output ONLY topics, one per line, no numbers or bullets."
+    if not all([client_id, client_secret, refresh_token]):
+        raise ValueError(
+            "Missing credentials! Set these GitHub Secrets:\n"
+            "  - YT_CLIENT_ID\n"
+            "  - YT_CLIENT_SECRET\n"
+            "  - YT_REFRESH_TOKEN"
         )
-        
-        ancient_prompt = f"Create {count//3 + 10} unique ancient law topics from different civilizations"
-        ancient_url = base_url + quote(ancient_prompt)
-        ancient_params = {"model": "openai", "temperature": 1.0, "system": ancient_system}
-        
-        print(f"[topics] Generating ancient law topics...")
-        try:
-            r = requests.get(ancient_url, params=ancient_params, timeout=120)
-            r.raise_for_status()
-            
-            ancient_topics = []
-            for line in r.text.strip().split('\n'):
-                cleaned = line.strip()
-                for prefix in ['- ', '* ', '• ']:
-                    if cleaned.startswith(prefix):
-                        cleaned = cleaned[len(prefix):]
-                import re
-                cleaned = re.sub(r'^\d+[\.\:\)]\s*', '', cleaned)
-                if cleaned and len(cleaned) > 5:
-                    full_topic = f"[ANCIENT] {cleaned}"
-                    # Check if not used before
-                    if full_topic not in used_topics_set:
-                        ancient_topics.append(full_topic)
-        except Exception as e:
-            print(f"[topics] Error generating ancient topics: {e}")
-            ancient_topics = []
-        
-        # Generate medieval law topics
-        medieval_system = (
-            "You are a legal historian specializing in medieval laws. "
-            f"Create a list of {count//3 + 10} unique topics about medieval laws in English. "
-            "Each topic should be short (5-10 words), intriguing and informative. "
-            "Topics should cover: Magna Carta, feudal law, canon law, Islamic law (Sharia), "
-            "medieval European laws, trial by ordeal, medieval justice systems, "
-            "guild laws, medieval property rights, chivalric codes, medieval punishments, "
-            "Byzantine law, Mongol law, Ottoman law, medieval African kingdoms laws, "
-            "medieval Asian laws, Samurai code, medieval merchant laws. "
-            "Be creative and diverse. Output ONLY topics, one per line, no numbers or bullets."
-        )
-        
-        medieval_prompt = f"Create {count//3 + 10} unique medieval law topics from different regions"
-        medieval_url = base_url + quote(medieval_prompt)
-        medieval_params = {"model": "openai", "temperature": 1.0, "system": medieval_system}
-        
-        print(f"[topics] Generating medieval law topics...")
-        try:
-            r = requests.get(medieval_url, params=medieval_params, timeout=120)
-            r.raise_for_status()
-            
-            medieval_topics = []
-            for line in r.text.strip().split('\n'):
-                cleaned = line.strip()
-                for prefix in ['- ', '* ', '• ']:
-                    if cleaned.startswith(prefix):
-                        cleaned = cleaned[len(prefix):]
-                import re
-                cleaned = re.sub(r'^\d+[\.\:\)]\s*', '', cleaned)
-                if cleaned and len(cleaned) > 5:
-                    full_topic = f"[MEDIEVAL] {cleaned}"
-                    # Check if not used before
-                    if full_topic not in used_topics_set:
-                        medieval_topics.append(full_topic)
-        except Exception as e:
-            print(f"[topics] Error generating medieval topics: {e}")
-            medieval_topics = []
-        
-        # Generate modern law topics
-        modern_system = (
-            "You are a legal expert specializing in modern laws worldwide. "
-            f"Create a list of {count//3 + 10} unique topics about modern laws in English. "
-            "Each topic should be short (5-10 words), current and engaging. "
-            "Topics should cover: constitutional law, international law, human rights law, "
-            "environmental law, cyber law, intellectual property, criminal law reforms, "
-            "civil rights, landmark court cases, unusual laws from different countries, "
-            "legal innovations, comparative law across nations, space law, AI regulation, "
-            "data privacy, cryptocurrency laws, social media laws, bioethics laws, "
-            "climate law, refugee law, trade law, labor law, consumer rights. "
-            "Be creative and diverse. Output ONLY topics, one per line, no numbers or bullets."
-        )
-        
-        modern_prompt = f"Create {count//3 + 10} unique modern law topics from around the world"
-        modern_url = base_url + quote(modern_prompt)
-        modern_params = {"model": "openai", "temperature": 1.0, "system": modern_system}
-        
-        print(f"[topics] Generating modern law topics...")
-        try:
-            r = requests.get(modern_url, params=modern_params, timeout=120)
-            r.raise_for_status()
-            
-            modern_topics = []
-            for line in r.text.strip().split('\n'):
-                cleaned = line.strip()
-                for prefix in ['- ', '* ', '• ']:
-                    if cleaned.startswith(prefix):
-                        cleaned = cleaned[len(prefix):]
-                import re
-                cleaned = re.sub(r'^\d+[\.\:\)]\s*', '', cleaned)
-                if cleaned and len(cleaned) > 5:
-                    full_topic = f"[MODERN] {cleaned}"
-                    # Check if not used before
-                    if full_topic not in used_topics_set:
-                        modern_topics.append(full_topic)
-        except Exception as e:
-            print(f"[topics] Error generating modern topics: {e}")
-            modern_topics = []
-        
-        # Interleave ancient, medieval, and modern topics for variety
-        max_len = max(len(ancient_topics), len(medieval_topics), len(modern_topics))
-        for i in range(max_len):
-            if i < len(ancient_topics) and len(all_new_topics) < count:
-                all_new_topics.append(ancient_topics[i])
-            if i < len(medieval_topics) and len(all_new_topics) < count:
-                all_new_topics.append(medieval_topics[i])
-            if i < len(modern_topics) and len(all_new_topics) < count:
-                all_new_topics.append(modern_topics[i])
-        
-        print(f"[topics] Generated {len(all_new_topics)} unique topics so far...")
     
-    return all_new_topics[:count]
+    # Create credentials from refresh token
+    creds = Credentials(
+        None,
+        refresh_token=refresh_token,
+        token_uri="https://oauth2.googleapis.com/token",
+        client_id=client_id,
+        client_secret=client_secret,
+        scopes=["https://www.googleapis.com/auth/youtube"]
+    )
+    
+    # Refresh to get access token
+    creds.refresh(Request())
+    
+    return build('youtube', 'v3', credentials=creds)
 
-def check_and_update_topics():
-    """Check topics.txt and add more if needed, tracking used topics."""
+def upload_to_youtube(video_file, title, description, tags, category_id='27'):
+    """Upload video to YouTube and return result."""
+    youtube = get_authenticated_service()
     
-    topics_file = Path('topics.txt')
-    used_topics_file = Path('used_topics.txt')
+    body = {
+        'snippet': {
+            'title': title,
+            'description': description,
+            'tags': tags,
+            'categoryId': category_id
+        },
+        'status': {
+            'privacyStatus': 'public',
+            'selfDeclaredMadeForKids': False,
+        }
+    }
     
-    # Read existing topics
-    if topics_file.exists():
-        with open(topics_file, 'r', encoding='utf-8') as f:
-            existing_topics = [line.strip() for line in f if line.strip()]
+    if '#Shorts' not in body['snippet']['description']:
+        body['snippet']['description'] += '\n\n#Shorts'
+    
+    media = MediaFileUpload(
+        str(video_file),
+        chunksize=-1,
+        resumable=True,
+        mimetype='video/mp4'
+    )
+    
+    print(f"[youtube] Uploading: {title}")
+    request = youtube.videos().insert(
+        part=','.join(body.keys()),
+        body=body,
+        media_body=media
+    )
+    
+    response = None
+    while response is None:
+        status, response = request.next_chunk()
+        if status:
+            print(f"[youtube] Progress: {int(status.progress() * 100)}%")
+    
+    print(f"[youtube] ✅ Uploaded! Video ID: {response['id']}")
+    print(f"[youtube] URL: https://youtube.com/shorts/{response['id']}")
+    
+    return response
+
+def main():
+    """Upload the generated video to YouTube."""
+    video_file = Path('output/final_video.mp4')
+    
+    if not video_file.exists():
+        print("[youtube] ❌ No video found at output/final_video.mp4")
+        return
+    
+    # Read the story and topic for title
+    story_file = Path('output/story.txt')
+    topic_file = Path('output/topic.txt')
+    
+    # Try to get topic first (most reliable)
+    if topic_file.exists():
+        topic = topic_file.read_text(encoding='utf-8').strip()
+        # Remove era tags for cleaner title
+        topic = topic.replace('[ANCIENT] ', '').replace('[MEDIEVAL] ', '').replace('[MODERN] ', '')
+        title = topic
+    elif story_file.exists():
+        story = story_file.read_text(encoding='utf-8').strip()
+        # Extract first sentence for title
+        first_sentence = story.split('.')[0] if '.' in story else story.split('!')[0]
+        title = first_sentence.strip()
     else:
-        existing_topics = []
+        title = "Fascinating Law from History"
     
-    # Read used topics
-    if used_topics_file.exists():
-        with open(used_topics_file, 'r', encoding='utf-8') as f:
-            used_topics = set(line.strip() for line in f if line.strip())
-    else:
-        used_topics = set()
+    # Ensure title is not too long (YouTube limit is 100, but 70 is better for mobile)
+    if len(title) > 70:
+        title = title[:67] + "..."
     
-    print(f"[topics] Current available topics: {len(existing_topics)}")
-    print(f"[topics] Total used topics: {len(used_topics)}")
+    # Create engaging description
+    description = (
+        "Discover fascinating legal history and laws from around the world! "
+        "Learn about ancient codes, medieval justice, and modern legal systems.\n\n"
+        "#Shorts #Law #LegalHistory #History #Education #Legal #Justice #Court #Ancient #Medieval"
+    )
     
-    # Check if we need more topics (threshold: 20 topics remaining)
-    if len(existing_topics) < 20:
-        print(f"[topics] Low on topics! Generating 100 NEW fresh topics...")
-        
-        new_topics = generate_new_topics(100, used_topics)
-        
-        # Append to file
-        with open(topics_file, 'a', encoding='utf-8') as f:
-            for topic in new_topics:
-                f.write(f"{topic}\n")
-        
-        print(f"[topics] Added {len(new_topics)} NEW topics!")
-        print(f"[topics] Total topics now: {len(existing_topics) + len(new_topics)}")
-    else:
-        print(f"[topics] Enough topics available ({len(existing_topics)})")
+    tags = [
+        'Law', 'Legal History', 'History', 'Education', 'Legal System',
+        'Shorts', 'Justice', 'Court', 'Ancient Law', 'Legal Facts',
+        'World History', 'Legal Education', 'Fascinating Facts'
+    ]
+    
+    # Upload
+    try:
+        upload_to_youtube(
+            video_file=video_file,
+            title=title,
+            description=description,
+            tags=tags,
+            category_id='27'  # Education category
+        )
+    except Exception as e:
+        print(f"[youtube] ❌ Upload failed: {e}")
+        raise
 
 if __name__ == '__main__':
-    check_and_update_topics()
+    main()
