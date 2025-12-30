@@ -17,9 +17,9 @@ def upload_to_instagram(video_path, caption):
     print("📸 INSTAGRAM UPLOAD STARTING")
     print("=" * 60)
     
-    # Get credentials - support both naming conventions
-    access_token = os.getenv('INSTAGRAM_ACCESS_TOKEN') or os.getenv('IG_ACCESS_TOKEN')
-    user_id = os.getenv('INSTAGRAM_ACCOUNT_ID') or os.getenv('IG_USER_ID')
+    # Get credentials
+    access_token = os.getenv('INSTAGRAM_ACCESS_TOKEN')
+    user_id = os.getenv('INSTAGRAM_ACCOUNT_ID')
     
     if not access_token:
         error_msg = "❌ INSTAGRAM_ACCESS_TOKEN not set"
