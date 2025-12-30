@@ -99,14 +99,20 @@ def main():
         print("[upload] ❌ No video found at output/final_video.mp4")
         return
     
-    # Read topic from used_topics.txt (last line)
+    # Read topic from output/topic.txt (preferred) or used_topics.txt (fallback)
+    topic_file = Path('output/topic.txt')
     used_topics_file = Path('used_topics.txt')
     topic = "Law History"
-    if used_topics_file.exists():
+    
+    if topic_file.exists():
+        topic = topic_file.read_text(encoding='utf-8').strip()
+        print(f"[upload] 📋 Topic from topic.txt: {topic}")
+    elif used_topics_file.exists():
         with open(used_topics_file, 'r', encoding='utf-8') as f:
             lines = [line.strip() for line in f if line.strip()]
             if lines:
                 topic = lines[-1]  # Get the most recent topic
+        print(f"[upload] 📋 Topic from used_topics.txt: {topic}")
     
     # Read story for metadata
     story_file = Path('output/story.txt')
