@@ -40,6 +40,8 @@ jobs:
         python generate_topics.py
 
     - name: Generate daily short video
+      env:
+        POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
       run: |
         python main.py
 
