@@ -43,7 +43,7 @@ def get_authenticated_service():
     
     return build('youtube', 'v3', credentials=creds)
 
-def upload_to_youtube(video_file, title, description, tags, category_id='22'):
+def upload_to_youtube(video_file, title, description, tags, category_id='27'):
     """Upload video to YouTube and return result."""
     youtube = get_authenticated_service()
     
@@ -98,25 +98,37 @@ def main():
     
     # Read the story and topic for title
     story_file = Path('output/story.txt')
-    topic = ""
+    topic_file = Path('output/topic.txt')
     
-    if story_file.exists():
-        story = story_file.read_text(encoding='utf-8')
-        
-        # Extract key phrase from first sentence for title
-        first_sentence = story.split('.')[0] if '.' in story else story[:80]
-        
-        # Create short, catchy title (max 60 chars for mobile)
-        title = first_sentence[:57] + "..." if len(first_sentence) > 60 else first_sentence
+    # Try to get topic first (most reliable)
+    if topic_file.exists():
+        topic = topic_file.read_text(encoding='utf-8').strip()
+        # Remove era tags for cleaner title
+        topic = topic.replace('[ANCIENT] ', '').replace('[MEDIEVAL] ', '').replace('[MODERN] ', '')
+        title = topic
+    elif story_file.exists():
+        story = story_file.read_text(encoding='utf-8').strip()
+        # Extract first sentence for title
+        first_sentence = story.split('.')[0] if '.' in story else story.split('!')[0]
+        title = first_sentence.strip()
     else:
-        title = "Crypto & Web3 Explained"
+        title = "Fascinating Law from History"
     
-    # NO description for Shorts (as requested)
-    description = "#Shorts #Crypto #NFT #Web3 #Blockchain #DeFi"
+    # Ensure title is not too long (YouTube limit is 100, but 70 is better for mobile)
+    if len(title) > 70:
+        title = title[:67] + "..."
+    
+    # Create engaging description
+    description = (
+        "Discover fascinating legal history and laws from around the world! "
+        "Learn about ancient codes, medieval justice, and modern legal systems.\n\n"
+        "#Shorts #Law #LegalHistory #History #Education #Legal #Justice #Court #Ancient #Medieval"
+    )
     
     tags = [
-        'Crypto', 'NFT', 'Web3', 'Blockchain', 'DeFi',
-        'Shorts', 'Cryptocurrency', 'Education', 'Crypto News'
+        'Law', 'Legal History', 'History', 'Education', 'Legal System',
+        'Shorts', 'Justice', 'Court', 'Ancient Law', 'Legal Facts',
+        'World History', 'Legal Education', 'Fascinating Facts'
     ]
     
     # Upload
@@ -126,7 +138,7 @@ def main():
             title=title,
             description=description,
             tags=tags,
-            category_id='22'
+            category_id='27'  # Education category
         )
     except Exception as e:
         print(f"[youtube] ❌ Upload failed: {e}")
