@@ -9,6 +9,7 @@ import requests
 import time
 from generate_topics import check_and_update_topics
 from dotenv import load_dotenv
+from PIL import Image
 
 # Load environment variables
 load_dotenv()
@@ -19,9 +20,13 @@ load_dotenv()
 POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
 
 NUM_IMAGES = 15  # 15 unique scenes for better coverage
-IMAGE_WIDTH = 720   # 720x1280 is safer/faster for Turbo
+IMAGE_WIDTH = 720   # Generate at 720x1280 for speed
 IMAGE_HEIGHT = 1280
-IMAGE_MODEL = "turbo"  # Turbo model for fast generation
+IMAGE_MODEL = "zimage"  # Z-Image Turbo for better quality
+
+# Upscale settings for HD YouTube videos
+FINAL_WIDTH = 1080
+FINAL_HEIGHT = 1920
 
 STORY_MAX_WORDS = 130
 
@@ -198,78 +203,118 @@ def generate_image(scene: str, idx: int) -> Path:
     
     if topic_era == 'ANCIENT':
         style_prompt = (
-            f"VIRAL cinematic shot: {scene}, "
-            # Scene-Specific People & Action
-            f"dramatic ancient scene with realistic people, "
-            f"authentic period costumes, detailed facial expressions showing emotion, "
-            f"judges, scholars, or citizens in historically accurate robes, "
-            # Stunning Environment
-            f"breathtaking ancient architecture, massive stone temples, "
-            f"towering columns with intricate carvings, "
-            f"Egyptian pyramids or Roman forums in background, "
-            f"hieroglyphics and ancient inscriptions visible, "
-            # Cinematic Lighting
-            f"golden hour sunlight, dramatic shadows, "
-            f"volumetric light rays through dust, "
-            f"warm amber glow, cinematic atmosphere, "
-            # Viral Quality
-            f"photorealistic, 8k ultra HD, National Geographic quality, "
-            f"perfect composition, sharp focus, highly detailed, "
-            f"award-winning photography, trending on social media, "
-            f"visually stunning, attention-grabbing"
+            # CRITICAL: SFW AND CLOTHING FIRST - ABSOLUTE PRIORITY
+            f"SAFE FOR WORK, FULLY CLOTHED PEOPLE, "
+            f"everyone wearing complete period clothing, "
+            f"full robes and togas covering entire body, "
+            f"modest historical dress, NO NUDITY, "
+            f"professional family-friendly content, "
+            # Anatomy (with clothing)
+            f"professional photograph, correct human anatomy, "
+            f"beautiful faces with clear eyes nose mouth, "
+            f"normal hands with 5 fingers, proper proportions, "
+            f"realistic clothed people, "
+            # Scene content
+            f"{scene}, "
+            f"ancient Roman or Greek legal setting, "
+            f"judges and citizens in full traditional robes, "
+            f"detailed expressive faces, dignified poses, "
+            # Environment
+            f"magnificent ancient architecture, marble columns, "
+            f"stone temples, classical buildings, "
+            # Lighting
+            f"golden hour lighting, warm sunlight, cinematic, "
+            # Quality
+            f"photorealistic, ultra detailed, sharp focus, "
+            f"professional photography, 8k quality, "
+            f"National Geographic documentary style"
         )
     elif topic_era == 'MEDIEVAL':
         style_prompt = (
-            f"VIRAL dramatic scene: {scene}, "
-            # Scene-Specific People & Drama
-            f"intense medieval moment with realistic people, "
-            f"knights in shining armor, judges in ceremonial robes, "
-            f"nobles in rich period clothing, detailed expressive faces, "
-            f"authentic medieval features, emotional intensity, "
-            # Epic Environment
-            f"majestic gothic castle, grand stone courtroom, "
-            f"cathedral with stunning stained glass windows, "
-            f"medieval great hall with tapestries and banners, "
-            f"torches casting flickering shadows, "
-            # Atmospheric Lighting
-            f"dramatic candlelight, warm torch glow, "
-            f"chiaroscuro lighting, atmospheric haze, "
-            f"colored light through stained glass, "
-            # Viral Quality
-            f"photorealistic, 8k ultra HD, cinematic masterpiece, "
-            f"perfect composition, sharp focus, highly detailed, "
-            f"Game of Thrones quality, trending visual style, "
-            f"visually captivating, scroll-stopping"
+            # CRITICAL: SFW AND CLOTHING FIRST - ABSOLUTE PRIORITY
+            f"SAFE FOR WORK, FULLY CLOTHED PEOPLE, "
+            f"everyone wearing complete period clothing, "
+            f"full armor and ceremonial robes covering entire body, "
+            f"modest medieval dress, NO NUDITY, "
+            f"professional family-friendly content, "
+            # Anatomy (with clothing)
+            f"professional photograph, correct human anatomy, "
+            f"beautiful faces with clear eyes nose mouth, "
+            f"normal hands with 5 fingers, proper proportions, "
+            f"realistic clothed people, "
+            # Scene content
+            f"{scene}, "
+            f"medieval European castle legal setting, "
+            f"knights and nobles in full traditional dress, "
+            f"detailed expressive faces, dignified poses, "
+            # Environment
+            f"gothic castle, stone halls, stained glass windows, "
+            # Lighting
+            f"dramatic lighting, torch light, candlelight, atmospheric, "
+            # Quality
+            f"photorealistic, ultra detailed, sharp focus, "
+            f"professional photography, 8k quality, "
+            f"Game of Thrones TV show style"
         )
     else:  # MODERN
         style_prompt = (
-            f"VIRAL professional scene: {scene}, "
-            # Scene-Specific People & Energy
-            f"powerful modern legal moment with diverse realistic people, "
-            f"confident lawyers and judges in sharp business attire, "
-            f"detailed facial expressions showing determination, "
-            f"professional body language, authentic human presence, "
-            # Impressive Environment
-            f"sleek modern courthouse with glass and marble, "
-            f"contemporary courtroom with dramatic lighting, "
-            f"high-rise legal office with city skyline, "
-            f"professional law library with modern design, "
-            # Dynamic Lighting
-            f"professional studio lighting, clean bright atmosphere, "
-            f"natural daylight streaming through windows, "
-            f"sharp focus with depth of field, "
-            # Viral Quality
-            f"photorealistic, 8k ultra HD, magazine quality, "
-            f"perfect composition, razor sharp, highly detailed, "
-            f"Suits TV show quality, trending aesthetic, "
-            f"visually impressive, engagement-optimized"
+            # CRITICAL: SFW AND CLOTHING FIRST - ABSOLUTE PRIORITY
+            f"SAFE FOR WORK, FULLY CLOTHED PEOPLE, "
+            f"everyone wearing complete business attire, "
+            f"full suits and professional clothing covering entire body, "
+            f"modest business dress, NO NUDITY, "
+            f"professional family-friendly content, "
+            # Anatomy (with clothing)
+            f"professional photograph, correct human anatomy, "
+            f"beautiful faces with clear eyes nose mouth, "
+            f"normal hands with 5 fingers, proper proportions, "
+            f"realistic clothed people, "
+            # Scene content
+            f"{scene}, "
+            f"modern professional legal setting, "
+            f"diverse lawyers and judges in full business suits, "
+            f"detailed expressive faces, professional poses, "
+            # Environment
+            f"contemporary courthouse, glass and marble, modern architecture, "
+            # Lighting
+            f"professional lighting, bright clean atmosphere, "
+            # Quality
+            f"photorealistic, ultra detailed, sharp focus, "
+            f"professional photography, 8k quality, "
+            f"corporate magazine style"
         )
     
-    # Minimal negative prompt - allow creativity while avoiding obvious flaws
+    # COMPREHENSIVE negative prompt - block ALL deformities AND NSFW
     negative_prompt = (
-        "blurry, low quality, distorted faces, "
-        "deformed anatomy, cartoon, anime, "
-        "watermark, text"
+        # CRITICAL: NSFW blocking
+        "nude, nudity, naked, nsfw, exposed skin, bare chest, "
+        "bare body, undressed, topless, revealing, "
+        "inappropriate, adult content, sexual, "
+        # Face deformities
+        "deformed face, ugly face, distorted face, malformed face, "
+        "disfigured face, bad eyes, crossed eyes, missing eyes, extra eyes, "
+        "bad nose, missing nose, deformed mouth, bad teeth, "
+        "asymmetrical face, mutated face, "
+        # Body deformities
+        "deformed body, bad anatomy, wrong anatomy, extra limbs, "
+        "missing limbs, extra arms, extra legs, missing arms, missing legs, "
+        "bad hands, deformed hands, extra fingers, missing fingers, "
+        "fused fingers, mutated hands, poorly drawn hands, "
+        "bad feet, deformed feet, extra toes, missing toes, "
+        "malformed limbs, disfigured, mutation, mutated, "
+        "extra body parts, duplicate body parts, "
+        # Proportions
+        "bad proportions, long neck, long body, elongated, "
+        "stretched, distorted proportions, "
+        # Quality issues
+        "blurry, low quality, low resolution, pixelated, "
+        "grainy, jpeg artifacts, compression artifacts, "
+        # Style issues
+        "cartoon, anime, drawing, painting, illustration, "
+        "3d render, cgi, "
+        # Other
+        "watermark, text, signature, username, "
+        "cropped, cut off, out of frame"
     )
     
     # Encode prompts
@@ -293,6 +338,7 @@ def generate_image(scene: str, idx: int) -> Path:
     }
 
     out = IMAGES_DIR / f"scene_{idx:02d}.jpg"
+    out_upscaled = IMAGES_DIR / f"scene_{idx:02d}_hd.jpg"
     print(f"[image] 🎬 Generating VIRAL {topic_era.lower()} image {idx+1}/{NUM_IMAGES}...")
     print(f"[image] 📸 Scene: {scene[:70]}...")
     
@@ -310,9 +356,17 @@ def generate_image(scene: str, idx: int) -> Path:
                 raise ValueError("Image too small")
             
             out.write_bytes(r.content)
-            print(f"[image] ✅ VIRAL image {idx+1} ready! ({len(r.content)//1024}KB)")
+            print(f"[image] ✅ Image {idx+1} downloaded ({len(r.content)//1024}KB)")
+            
+            # Upscale to 1080x1920 using Pillow for HD quality
+            print(f"[image] 🔍 Upscaling to {FINAL_WIDTH}x{FINAL_HEIGHT} HD...")
+            img = Image.open(out)
+            img_upscaled = img.resize((FINAL_WIDTH, FINAL_HEIGHT), Image.Resampling.LANCZOS)
+            img_upscaled.save(out_upscaled, quality=95, optimize=True)
+            print(f"[image] ✅ HD image {idx+1} ready! ({out_upscaled.stat().st_size//1024}KB)")
+            
             time.sleep(2)
-            return out
+            return out_upscaled
             
         except requests.exceptions.HTTPError as e:
             status_code = e.response.status_code if e.response else "Unknown"
@@ -500,7 +554,7 @@ def create_animated_slideshow(image_paths):
             "-vf", (
                 f"scale=8000:-1,"
                 f"zoompan=z='if(lte(on,1),{zoom_start},{zoom_start}+(({zoom_end}-{zoom_start})/{frames})*on)':"
-                f"d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={IMAGE_WIDTH}x{IMAGE_HEIGHT}:fps=30"
+                f"d={frames}:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s={FINAL_WIDTH}x{FINAL_HEIGHT}:fps=30"
             ),
             "-t", str(per_image),
             "-c:v", "libx264",
@@ -518,7 +572,7 @@ def create_animated_slideshow(image_paths):
                 "ffmpeg", "-y",
                 "-loop", "1",
                 "-i", str(img_path),
-                "-vf", f"scale={IMAGE_WIDTH}:{IMAGE_HEIGHT}:force_original_aspect_ratio=increase,crop={IMAGE_WIDTH}:{IMAGE_HEIGHT},fps=30",
+                "-vf", f"scale={FINAL_WIDTH}:{FINAL_HEIGHT}:force_original_aspect_ratio=increase,crop={FINAL_WIDTH}:{FINAL_HEIGHT},fps=30",
                 "-t", str(per_image),
                 "-c:v", "libx264",
                 "-pix_fmt", "yuv420p",
