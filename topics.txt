@@ -19,7 +19,6 @@
 [MEDIEVAL] Magna Carta Habeas Corpus Origins
 [MODERN] Same-Sex Marriage Legalization Worldwide
 [ANCIENT] Ancient Indian Manusmriti Laws
-[MEDIEVAL] Medieval Guild Regulations
 [MODERN] Intellectual Property Copyright Laws
 [ANCIENT] Persian Empire Legal System
 [MEDIEVAL] Medieval Punishment Methods

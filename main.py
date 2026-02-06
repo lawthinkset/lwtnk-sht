@@ -20,9 +20,9 @@ load_dotenv()
 POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
 
 NUM_IMAGES = 15  # 15 unique scenes for better coverage
-IMAGE_WIDTH = 720   # Generate at 720x1280 for speed
-IMAGE_HEIGHT = 1280
-IMAGE_MODEL = "zimage"  # Z-Image Turbo for better quality
+IMAGE_WIDTH = 1080
+IMAGE_HEIGHT = 1920
+IMAGE_MODEL = "klein"
 
 # Upscale settings for HD YouTube videos
 FINAL_WIDTH = 1080
@@ -373,15 +373,9 @@ def generate_image(scene: str, idx: int) -> Path:
             if len(r.content) < 1000:
                 raise ValueError("Image too small")
             
-            out.write_bytes(r.content)
-            print(f"[image] ✅ Image {idx+1} downloaded ({len(r.content)//1024}KB)")
-            
-            # Upscale to 1080x1920 using Pillow for HD quality
-            print(f"[image] 🔍 Upscaling to {FINAL_WIDTH}x{FINAL_HEIGHT} HD...")
-            img = Image.open(out)
-            img_upscaled = img.resize((FINAL_WIDTH, FINAL_HEIGHT), Image.Resampling.LANCZOS)
-            img_upscaled.save(out_upscaled, quality=95, optimize=True)
-            print(f"[image] ✅ HD image {idx+1} ready! ({out_upscaled.stat().st_size//1024}KB)")
+            # Save directly as the final image (no upscaling needed)
+            out_upscaled.write_bytes(r.content)
+            print(f"[image] ✅ Image {idx+1} ready! ({len(r.content)//1024}KB)")
             
             time.sleep(2)
             return out_upscaled
