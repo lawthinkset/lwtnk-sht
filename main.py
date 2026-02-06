@@ -96,8 +96,8 @@ def choose_topic_for_today():
     return selected_topic
 
 def generate_story_with_pollinations(topic: str) -> str:
-    """Generate a short English law explanation."""
-    base_url = "https://text.pollinations.ai/"
+    """Generate a short English law explanation using Paid API."""
+    base_url = "https://gen.pollinations.ai/text/"
     
     # Determine the era of law
     is_ancient = topic.startswith("[ANCIENT]")
@@ -131,12 +131,30 @@ def generate_story_with_pollinations(topic: str) -> str:
         prompt = f"Topic: {clean_topic}. Explain this modern law with current context."
 
     url = base_url + quote(prompt)
-    params = {"model": "openai", "temperature": 1.0, "system": system}
+    params = {
+        "model": "openai", 
+        "temperature": 1.0, 
+        "system": system
+    }
+    
+    headers = {
+        "Authorization": f"Bearer {POLLINATIONS_API_KEY}"
+    }
 
     print(f"[story] Generating English law content for: {clean_topic}")
-    r = requests.get(url, params=params, timeout=60)
-    r.raise_for_status()
-    text = r.text.strip()
+    
+    try:
+        r = requests.get(url, params=params, headers=headers, timeout=60)
+        r.raise_for_status()
+        text = r.text.strip()
+        
+        if not text:
+            raise ValueError("API returned empty text")
+            
+    except Exception as e:
+        print(f"[story] Failed to generate story: {e}")
+        # Fallback or re-raise
+        raise
 
     words = text.split()
     if len(words) > STORY_MAX_WORDS:
@@ -330,7 +348,7 @@ def generate_image(scene: str, idx: int) -> Path:
         f"&nologo=true"
         f"&nofeed=true"
         f"&enhance=true"
-        f"&negative={safe_negative}"
+        f"&negative_prompt={safe_negative}"
     )
     
     headers = {

@@ -1,7 +1,6 @@
 [ANCIENT] Code of Hammurabi Eye for an Eye
 [MEDIEVAL] Magna Carta and the Birth of Rights
 [MODERN] Universal Declaration of Human Rights
-[ANCIENT] Roman Law Twelve Tables Foundation
 [MEDIEVAL] Trial by Ordeal in Medieval Europe
 [MODERN] International Criminal Court Jurisdiction
 [ANCIENT] Ancient Egyptian Ma'at Justice System
@@ -46,5 +45,4 @@
 [ANCIENT] Roman Citizenship Legal Rights
 [MEDIEVAL] Medieval Labor Laws
 [ANCIENT] Ancient Mesopotamian Court System
-[MEDIEVAL] Medieval Property Ownership
 [MODERN] International Trade Law WTO
