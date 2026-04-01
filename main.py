@@ -22,7 +22,7 @@ POLLINATIONS_API_KEY = os.getenv("POLLINATIONS_API_KEY", "")
 NUM_IMAGES = 15  # 15 unique scenes for better coverage
 IMAGE_WIDTH = 1080
 IMAGE_HEIGHT = 1920
-IMAGE_MODEL = "grok-imagine"
+IMAGE_MODEL = "zimage"
 
 # Upscale settings for HD YouTube videos
 FINAL_WIDTH = 1080
