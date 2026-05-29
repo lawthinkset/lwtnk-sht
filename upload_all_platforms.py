@@ -41,7 +41,6 @@ def generate_metadata_from_topic(topic: str, story: str):
     # Extract era and clean topic
     is_ancient = topic.startswith("[ANCIENT]")
     is_medieval = topic.startswith("[MEDIEVAL]")
-    is_modern = topic.startswith("[MODERN]")
     
     clean_topic = topic.replace("[ANCIENT] ", "").replace("[MEDIEVAL] ", "").replace("[MODERN] ", "")
     
@@ -49,12 +48,9 @@ def generate_metadata_from_topic(topic: str, story: str):
     if is_ancient:
         era = "Ancient"
         era_hashtag = "#AncientLaw"
-    elif is_medieval:
+    else:
         era = "Medieval"
         era_hashtag = "#MedievalLaw"
-    else:
-        era = "Modern"
-        era_hashtag = "#ModernLaw"
     
     # Generate title (use first sentence of story or topic)
     title_parts = story.split('.')
@@ -305,4 +301,8 @@ def main():
     print("="*60)
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except Exception as e:
+        print(f"\n[upload] ❌ Upload pipeline error: {e}")
+        print("[upload] Continuing gracefully...")

@@ -118,17 +118,29 @@ def main():
     if len(title) > 70:
         title = title[:67] + "..."
     
-    # Create engaging description
-    description = (
-        "Discover fascinating legal history and laws from around the world! "
-        "Learn about ancient codes, medieval justice, and modern legal systems.\n\n"
-        "#Shorts #Law #LegalHistory #History #Education #Legal #Justice #Court #Ancient #Medieval"
-    )
+    # Read story text for description
+    story_text = ""
+    if story_file.exists():
+        story_text = story_file.read_text(encoding='utf-8').strip()
+    
+    # Create engaging description with full story
+    if story_text:
+        description = f"""{title}
+
+{story_text}
+
+#Shorts #Law #LegalHistory #History #Education #AncientLaw #MedievalLaw #Justice"""
+    else:
+        description = (
+            "Discover fascinating legal history and laws from around the world! "
+            "Learn about ancient codes, medieval justice, and modern legal systems.\n\n"
+            "#Shorts #Law #LegalHistory #History #Education #AncientLaw #MedievalLaw #Justice"
+        )
     
     tags = [
         'Law', 'Legal History', 'History', 'Education', 'Legal System',
-        'Shorts', 'Justice', 'Court', 'Ancient Law', 'Legal Facts',
-        'World History', 'Legal Education', 'Fascinating Facts'
+        'Shorts', 'Justice', 'Court', 'Ancient Law', 'Medieval Law',
+        'World History', 'Legal Education', 'Historical Facts'
     ]
     
     # Upload

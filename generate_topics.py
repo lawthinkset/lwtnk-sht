@@ -13,7 +13,7 @@ from urllib.parse import quote
 from pathlib import Path
 
 def generate_new_topics(count=100, used_topics_set=None):
-    """Generate new law topics covering ancient, medieval, and modern laws from around the world."""
+    """Generate new law topics covering ancient and medieval laws from around the world."""
     
     if used_topics_set is None:
         used_topics_set = set()
@@ -32,7 +32,7 @@ def generate_new_topics(count=100, used_topics_set=None):
         # Generate ancient law topics
         ancient_system = (
             "You are a legal historian specializing in ancient laws. "
-            f"Create a list of {count//3 + 10} unique topics about ancient laws in English. "
+            f"Create a list of {count//2 + 10} unique topics about ancient laws in English. "
             "Each topic should be short (5-10 words), fascinating and educational. "
             "Topics should cover: Code of Hammurabi, Roman Law, Ancient Egyptian laws, "
             "Ancient Greek laws, Mosaic Law, Ancient Chinese laws, Babylonian laws, "
@@ -42,7 +42,7 @@ def generate_new_topics(count=100, used_topics_set=None):
             "Be creative and diverse. Output ONLY topics, one per line, no numbers or bullets."
         )
         
-        ancient_prompt = f"Create {count//3 + 10} unique ancient law topics from different civilizations"
+        ancient_prompt = f"Create {count//2 + 10} unique ancient law topics from different civilizations"
         ancient_url = base_url + quote(ancient_prompt)
         ancient_params = {"model": "openai", "temperature": 1.0, "system": ancient_system}
         
@@ -61,7 +61,6 @@ def generate_new_topics(count=100, used_topics_set=None):
                 cleaned = re.sub(r'^\d+[\.\:\)]\s*', '', cleaned)
                 if cleaned and len(cleaned) > 5:
                     full_topic = f"[ANCIENT] {cleaned}"
-                    # Check if not used before
                     if full_topic not in used_topics_set:
                         ancient_topics.append(full_topic)
         except Exception as e:
@@ -71,7 +70,7 @@ def generate_new_topics(count=100, used_topics_set=None):
         # Generate medieval law topics
         medieval_system = (
             "You are a legal historian specializing in medieval laws. "
-            f"Create a list of {count//3 + 10} unique topics about medieval laws in English. "
+            f"Create a list of {count//2 + 10} unique topics about medieval laws in English. "
             "Each topic should be short (5-10 words), intriguing and informative. "
             "Topics should cover: Magna Carta, feudal law, canon law, Islamic law (Sharia), "
             "medieval European laws, trial by ordeal, medieval justice systems, "
@@ -81,7 +80,7 @@ def generate_new_topics(count=100, used_topics_set=None):
             "Be creative and diverse. Output ONLY topics, one per line, no numbers or bullets."
         )
         
-        medieval_prompt = f"Create {count//3 + 10} unique medieval law topics from different regions"
+        medieval_prompt = f"Create {count//2 + 10} unique medieval law topics from different regions"
         medieval_url = base_url + quote(medieval_prompt)
         medieval_params = {"model": "openai", "temperature": 1.0, "system": medieval_system}
         
@@ -100,62 +99,19 @@ def generate_new_topics(count=100, used_topics_set=None):
                 cleaned = re.sub(r'^\d+[\.\:\)]\s*', '', cleaned)
                 if cleaned and len(cleaned) > 5:
                     full_topic = f"[MEDIEVAL] {cleaned}"
-                    # Check if not used before
                     if full_topic not in used_topics_set:
                         medieval_topics.append(full_topic)
         except Exception as e:
             print(f"[topics] Error generating medieval topics: {e}")
             medieval_topics = []
         
-        # Generate modern law topics
-        modern_system = (
-            "You are a legal expert specializing in modern laws worldwide. "
-            f"Create a list of {count//3 + 10} unique topics about modern laws in English. "
-            "Each topic should be short (5-10 words), current and engaging. "
-            "Topics should cover: constitutional law, international law, human rights law, "
-            "environmental law, cyber law, intellectual property, criminal law reforms, "
-            "civil rights, landmark court cases, unusual laws from different countries, "
-            "legal innovations, comparative law across nations, space law, AI regulation, "
-            "data privacy, cryptocurrency laws, social media laws, bioethics laws, "
-            "climate law, refugee law, trade law, labor law, consumer rights. "
-            "Be creative and diverse. Output ONLY topics, one per line, no numbers or bullets."
-        )
-        
-        modern_prompt = f"Create {count//3 + 10} unique modern law topics from around the world"
-        modern_url = base_url + quote(modern_prompt)
-        modern_params = {"model": "openai", "temperature": 1.0, "system": modern_system}
-        
-        print(f"[topics] Generating modern law topics...")
-        try:
-            r = requests.get(modern_url, params=modern_params, timeout=120)
-            r.raise_for_status()
-            
-            modern_topics = []
-            for line in r.text.strip().split('\n'):
-                cleaned = line.strip()
-                for prefix in ['- ', '* ', '• ']:
-                    if cleaned.startswith(prefix):
-                        cleaned = cleaned[len(prefix):]
-                import re
-                cleaned = re.sub(r'^\d+[\.\:\)]\s*', '', cleaned)
-                if cleaned and len(cleaned) > 5:
-                    full_topic = f"[MODERN] {cleaned}"
-                    # Check if not used before
-                    if full_topic not in used_topics_set:
-                        modern_topics.append(full_topic)
-        except Exception as e:
-            print(f"[topics] Error generating modern topics: {e}")
-            modern_topics = []
-        
-        # Interleave ancient, medieval, and modern topics for variety
-        max_len = max(len(ancient_topics), len(medieval_topics), len(modern_topics))
+        # Interleave ancient and medieval topics for variety
+        max_len = max(len(ancient_topics), len(medieval_topics))
         for i in range(max_len):
             if i < len(ancient_topics) and len(all_new_topics) < count:
                 all_new_topics.append(ancient_topics[i])
             if i < len(medieval_topics) and len(all_new_topics) < count:
                 all_new_topics.append(medieval_topics[i])
-            if i < len(modern_topics) and len(all_new_topics) < count:
-                all_new_topics.append(modern_topics[i])
         
         print(f"[topics] Generated {len(all_new_topics)} unique topics so far...")
     

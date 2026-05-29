@@ -59,7 +59,7 @@ def ensure_dirs():
         f.unlink()
 
 def choose_topic_for_today():
-    """Choose today's topic and mark it as used."""
+    """Select and consume a topic. Auto-generates new unique topics when running low."""
     # Auto-replenish topics if low
     try:
         check_and_update_topics()
@@ -70,28 +70,68 @@ def choose_topic_for_today():
     used_topics_file = Path("used_topics.txt")
     
     # Read available topics
-    with open(topics_file, "r", encoding="utf-8") as f:
-        topics = [line.strip() for line in f if line.strip()]
+    try:
+        with open(topics_file, "r", encoding="utf-8") as f:
+            topics = [line.strip() for line in f if line.strip()]
+        print(f"[topics] 📚 Loaded topics: {len(topics)}")
+    except Exception as e:
+        print(f"[topics] ❌ Error reading {TOPICS_FILE}: {e}")
+        return "[ANCIENT] Roman Law Twelve Tables"
+    
+    # If running low on topics (< 50), generate more
+    if len(topics) < 50 and len(topics) >= 20:
+        print(f"[topics] ⚠️ Only {len(topics)} topics left. Pre-emptively generating more...")
+        try:
+            check_and_update_topics()
+            with open(topics_file, "r", encoding="utf-8") as f:
+                topics = [line.strip() for line in f if line.strip()]
+        except Exception as e:
+            print(f"[topics] ⚠️ Could not refill: {e}")
     
     if not topics:
-        raise Exception("No topics available! Run generate_topics.py first.")
+        print("[topics] ❌ No topics available! Using fallback.")
+        return "[ANCIENT] Roman Law Twelve Tables"
     
-    # Choose topic based on date (deterministic)
-    today = datetime.date.today()
-    selected_topic = topics[today.toordinal() % len(topics)]
+    # Always pick the first topic (guarantees uniqueness per run)
+    selected_topic = topics[0]
+    remaining_topics = topics[1:]
     
-    # Mark topic as used
-    with open(used_topics_file, "a", encoding="utf-8") as f:
-        f.write(f"{selected_topic}\n")
+    print(f"[topics] 🎯 Selected: '{selected_topic}'")
+    print(f"[topics] 📊 Remaining: {len(remaining_topics)}")
     
-    # Remove used topic from topics.txt
-    remaining_topics = [t for t in topics if t != selected_topic]
-    with open(topics_file, "w", encoding="utf-8") as f:
-        for topic in remaining_topics:
-            f.write(f"{topic}\n")
+    # Mark topic as used with verification
+    try:
+        with open(used_topics_file, "a", encoding="utf-8") as f:
+            f.write(f"{selected_topic}\n")
+            f.flush()
+        print(f"[topics] ✅ Logged to used_topics.txt")
+    except Exception as e:
+        print(f"[topics] ⚠️ Could not log to used_topics.txt: {e}")
     
-    print(f"[topics] Selected: {selected_topic}")
-    print(f"[topics] Remaining topics: {len(remaining_topics)}")
+    # Remove used topic from topics.txt with verification
+    write_success = False
+    for attempt in range(3):
+        try:
+            with open(topics_file, "w", encoding="utf-8") as f:
+                f.write("\n".join(remaining_topics) + "\n")
+                f.flush()
+            
+            # Verify the write
+            with open(topics_file, "r", encoding="utf-8") as f:
+                verification = [line.strip() for line in f if line.strip()]
+            
+            if len(verification) != len(remaining_topics):
+                print(f"[topics] ⚠️ Verification failed (attempt {attempt+1}/3)")
+                continue
+            
+            write_success = True
+            print(f"[topics] ✅ Topic removed and verified")
+            break
+        except Exception as e:
+            print(f"[topics] ⚠️ Write error (attempt {attempt+1}/3): {e}")
+    
+    if not write_success:
+        print(f"[topics] ❌ Failed to save topics.txt!")
     
     return selected_topic
 
