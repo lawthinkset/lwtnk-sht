@@ -105,56 +105,30 @@ def upload_to_instagram(video_path, caption):
         print(f"[instagram] ✅ Container created: {container_id}")
         
         # Step 3: Wait for processing
-        print(f"[instagram] ⏳ Step 3: Waiting for video processing...")
-        max_wait = 120
-        waited = 0
-        
-        while waited < max_wait:
-            status_url = f"https://graph.facebook.com/v18.0/{container_id}"
-            status_params = {
-                'fields': 'status_code',
-                'access_token': access_token
-            }
-            
-            status_response = requests.get(status_url, params=status_params, timeout=30)
-            status_data = status_response.json()
-            status_code = status_data.get('status_code', 'UNKNOWN')
-            
-            print(f"[instagram] Status: {status_code} (waited {waited}s)")
-            
-            if status_code == 'FINISHED':
-                print(f"[instagram] ✅ Video processing complete!")
-                break
-            elif status_code == 'ERROR':
-                error_msg = status_data.get('error_message', 'Video processing failed')
-                print(f"[instagram] ❌ {error_msg}")
-                raise Exception(error_msg)
-            
-            time.sleep(10)
-            waited += 10
-        
-        if waited >= max_wait:
-            error_msg = "Video processing timed out"
-            print(f"[instagram] ❌ {error_msg}")
-            raise Exception(error_msg)
-        
+        print("[instagram] Step 3: Waiting 60 seconds for processing...")
+        time.sleep(60)
+
         # Step 4: Publish
-        print(f"[instagram] 📤 Step 4: Publishing to Instagram...")
-        publish_url = f"https://graph.facebook.com/v18.0/{user_id}/media_publish"
+        print("[instagram] Step 4: Publishing...")
+        publish_url = f"https://graph.facebook.com/v21.0/{user_id}/media_publish"
         publish_params = {
-            'creation_id': container_id,
-            'access_token': access_token
+            "creation_id": container_id,
+            "access_token": access_token
         }
-        
         publish_response = requests.post(publish_url, params=publish_params, timeout=60)
-        
+
         if publish_response.status_code != 200:
-            error_data = publish_response.json() if publish_response.text else {}
-            error_msg = error_data.get('error', {}).get('message', 'Unknown error')
-            print(f"[instagram] ❌ Publish failed: {error_msg}")
+            print("[instagram] First publish failed, retrying after 30s...")
+            time.sleep(30)
+            publish_response = requests.post(publish_url, params=publish_params, timeout=60)
+
+        if publish_response.status_code != 200:
+            error_data = publish_response.json() if publish_response and publish_response.text else {}
+            error_msg = error_data.get("error", {}).get("message", "Unknown error")
+            print(f"[instagram] Publish failed: {error_msg}")
             raise Exception(f"Instagram Publish Error: {error_msg}")
-        
-        media_id = publish_response.json().get('id')
+
+        media_id = publish_response.json().get("id")
         
         print(f"[instagram] ✅ SUCCESS! Video published to Instagram!")
         print(f"[instagram] Media ID: {media_id}")
