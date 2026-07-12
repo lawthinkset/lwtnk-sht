@@ -51,37 +51,21 @@ def upload_to_instagram(video_path, caption):
     
     try:
         # Step 1: Upload to tmpfiles.org to get public URL
-        print(f"[instagram] 📤 Step 1: Uploading to temporary hosting...")
-        
-        with open(video_path_obj, 'rb') as video_file:
-            files = {'file': ('video.mp4', video_file, 'video/mp4')}
-            temp_response = requests.post(
-                'https://tmpfiles.org/api/v1/upload',
-                files=files,
-                timeout=180
-            )
-        
-        if temp_response.status_code != 200:
-            error_msg = f"Failed to upload to temporary hosting: {temp_response.status_code}"
-            print(f"[instagram] ❌ {error_msg}")
-            print(f"[instagram] Response: {temp_response.text[:200]}")
-            raise Exception(error_msg)
-        
-        temp_data = temp_response.json()
-        if temp_data.get('status') != 'success':
-            error_msg = f"Temporary hosting failed: {temp_data}"
-            print(f"[instagram] ❌ {error_msg}")
-            raise Exception(error_msg)
-        
-        # tmpfiles.org returns URL in format: https://tmpfiles.org/12345
-        # We need direct download link: https://tmpfiles.org/dl/12345
-        temp_url = temp_data.get('data', {}).get('url', '')
-        video_url = temp_url.replace('tmpfiles.org/', 'tmpfiles.org/dl/')
-        
-        print(f"[instagram] ✅ Temporary URL created: {video_url}")
-        
-        # Step 2: Create Instagram container with video URL
-        print(f"[instagram] 📦 Step 2: Creating Instagram container...")
+        print("[instagram] Step 1: Uploading to GitHub raw URL...")
+        import subprocess as _sp, uuid as _uuid, os as _os
+        _vid_name = "ig_" + _uuid.uuid4().hex[:8] + ".mp4"
+        _os.system("cp " + str(upload_path) + " " + _vid_name)
+        _os.system("git config --global user.email bot@bot.com")
+        _os.system("git config --global user.name Bot")
+        _os.system("git add -f " + _vid_name)
+        _os.system("git commit -m \"add " + _vid_name + "\"")
+        for _ in range(3):
+            _ret = _os.system("git push origin main")
+            if _ret == 0:
+                break
+            time.sleep(5)
+        video_url = "https://raw.githubusercontent.com/" + thriveruswave + "/" + lawthinkset + "/main/" + _vid_name
+        print("[instagram] GitHub raw URL: " + video_url)
         
         container_url = f"https://graph.facebook.com/v18.0/{user_id}/media"
         container_params = {
