@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import datetime
 import subprocess
 import random
@@ -7,7 +8,6 @@ from pathlib import Path
 from urllib.parse import quote
 import requests
 import time
-from generate_topics import check_and_update_topics
 from dotenv import load_dotenv
 from PIL import Image
 
@@ -136,310 +136,183 @@ def choose_topic_for_today():
     return selected_topic
 
 def generate_story_with_pollinations(topic: str) -> str:
-    """Generate a short English law explanation using Paid API."""
-    base_url = "https://gen.pollinations.ai/text/"
-    
-    # Determine the era of law
-    is_ancient = topic.startswith("[ANCIENT]")
-    is_medieval = topic.startswith("[MEDIEVAL]")
-    is_modern = topic.startswith("[MODERN]")
+    """Generate a short English law explanation using Paid API (POST chat completions)."""
     clean_topic = topic.replace("[ANCIENT] ", "").replace("[MEDIEVAL] ", "").replace("[MODERN] ", "")
-    
-    if is_ancient:
+    # Truncate absurdly long topics (like JSON reasoning blobs)
+    if len(clean_topic) > 300:
+        clean_topic = clean_topic[:300]
+
+    if topic.startswith("[ANCIENT]"):
         system = (
             "You are a legal historian specializing in ancient laws. "
             "Write a fascinating explanation in 30 seconds (80-130 words) in English. "
             "Explain the ancient law clearly with historical context and interesting facts. "
             "Use engaging storytelling and vivid descriptions. No headings or titles."
         )
-        prompt = f"Topic: {clean_topic}. Explain this ancient law with historical context."
-    elif is_medieval:
-        system = (
-            "You are a legal historian specializing in medieval laws. "
-            "Write an intriguing explanation in 30 seconds (80-130 words) in English. "
-            "Explain the medieval law with historical context and fascinating details. "
-            "Use engaging storytelling and vivid descriptions. No headings or titles."
-        )
-        prompt = f"Topic: {clean_topic}. Explain this medieval law with historical context."
-    else:  # Modern
+    else:
         system = (
             "You are a legal expert specializing in modern laws worldwide. "
             "Write a clear explanation in 30 seconds (80-130 words) in English. "
             "Explain the modern law with current context and practical implications. "
             "Use accessible language and real-world examples. No headings or titles."
         )
-        prompt = f"Topic: {clean_topic}. Explain this modern law with current context."
 
-    url = base_url + quote(prompt)
-    params = {
-        "model": "openai", 
-        "temperature": 1.0, 
-        "system": system
+    payload = {
+        "model": "openai",
+        "messages": [
+            {"role": "system", "content": system},
+            {"role": "user", "content": f"Topic: {clean_topic}. Explain this law with historical context."}
+        ],
+        "temperature": 1.0,
+        "max_tokens": 300
     }
-    
+
     headers = {
-        "Authorization": f"Bearer {POLLINATIONS_API_KEY}"
+        "Authorization": f"Bearer {POLLINATIONS_API_KEY}",
+        "Content-Type": "application/json"
     }
 
-    print(f"[story] Generating English law content for: {clean_topic}")
-    
-    try:
-        r = requests.get(url, params=params, headers=headers, timeout=60)
-        r.raise_for_status()
-        text = r.text.strip()
-        
-        if not text:
-            raise ValueError("API returned empty text")
-            
-    except Exception as e:
-        print(f"[story] Failed to generate story: {e}")
-        # Fallback or re-raise
-        raise
+    print(f"[story] Generating English law content for: {clean_topic[:80]}...")
 
-    words = text.split()
-    if len(words) > STORY_MAX_WORDS:
-        text = " ".join(words[:STORY_MAX_WORDS])
+    max_retries = 3
+    for attempt in range(max_retries):
+        try:
+            r = requests.post(
+                "https://gen.pollinations.ai/v1/chat/completions",
+                headers=headers,
+                json=payload,
+                timeout=60
+            )
+            r.raise_for_status()
+            data = r.json()
+            text = data.get("choices", [{}])[0].get("message", {}).get("content", "").strip()
 
-    with open(STORY_FILE, "w", encoding="utf-8") as f:
-        f.write(text)
+            if not text:
+                raise ValueError("API returned empty text")
 
-    print(f"[story] Law content generated ({len(text.split())} words)")
-    return text
+            words = text.split()
+            if len(words) > STORY_MAX_WORDS:
+                text = " ".join(words[:STORY_MAX_WORDS])
+
+            with open(STORY_FILE, "w", encoding="utf-8") as f:
+                f.write(text)
+
+            print(f"[story] Law content generated ({len(text.split())} words)")
+            return text
+
+        except Exception as e:
+            print(f"[story] Attempt {attempt+1}/{max_retries} failed: {e}")
+            if attempt < max_retries - 1:
+                time.sleep(5)
+            else:
+                raise
 
 def generate_scene_descriptions(story: str) -> list:
-    """Extract distinct scene descriptions from the story sentences."""
-    print(f"[scenes] Extracting {NUM_IMAGES} unique scene descriptions...")
-    
-    # Split story into sentences
+    """Enrich each story sentence with visual legal context so images match the content."""
+    print(f"[scenes] Extracting {NUM_IMAGES} visual scene descriptions...")
+
     sentences = re.split(r'[.!?]+\s*', story.strip())
     sentences = [s.strip() for s in sentences if s.strip() and len(s.strip()) > 10]
-    
-    # Create unique scenes from sentences
-    scenes = []
-    for i in range(NUM_IMAGES):
-        if i < len(sentences):
-            scene = sentences[i]
-        else:
-            # Cycle through sentences if we need more
-            scene = sentences[i % len(sentences)]
-        
-        # Make each scene description more visual
-        if i not in [j % len(sentences) for j in range(len(scenes))]:
-            scenes.append(scene)
-        else:
-            # Add variation for repeated scenes
-            variations = ["close-up view of", "wide shot of", "dramatic scene of", "peaceful moment of"]
-            scenes.append(f"{variations[i % len(variations)]} {scene}")
-    
-    # Ensure uniqueness by adding index
+
+    visual_enhancers = [
+        "detailed close-up view showing",
+        "wide dramatic scene illustrating",
+        "historical reenactment depicting",
+        "cinematic shot capturing the moment of",
+        "bird's eye view of the scene where",
+        "intimate close-up of the key figure involved in",
+        "grand wide shot of the historical event where",
+        "dramatic angle showing the tension of",
+        "detailed illustration of the practice of",
+        "atmospheric scene set during",
+        "portrait-style view of the central figure behind",
+        "action shot showing the execution of",
+        "solemn wide view of the ceremony of",
+        "candid historical moment capturing",
+        "dramatic reenactment showing the consequences of",
+    ]
+
     unique_scenes = []
-    for i, scene in enumerate(scenes[:NUM_IMAGES]):
-        unique_scenes.append(f"{scene}")
-    
-    # Save scenes
+    for i in range(NUM_IMAGES):
+        base = sentences[i % len(sentences)]
+        enhancer = visual_enhancers[i % len(visual_enhancers)]
+        unique_scenes.append(f"{enhancer} {base}")
+
     with open(SCENES_FILE, "w", encoding="utf-8") as f:
         for i, scene in enumerate(unique_scenes):
             f.write(f"{i+1}. {scene}\n")
-    
-    print(f"[scenes] Created {len(unique_scenes)} unique scenes")
+
+    print(f"[scenes] Created {len(unique_scenes)} visual scenes")
     return unique_scenes
 
-def generate_image(scene: str, idx: int) -> Path:
-    """Generate VIRAL-WORTHY, contextually relevant images using scene-specific prompts."""
-    
-    if not POLLINATIONS_API_KEY:
-        raise ValueError("POLLINATIONS_API_KEY not set! Get your API key from https://enter.pollinations.ai")
-    
-    # Create unique seed for each image
-    seed = hash(scene + str(idx)) % 1000000
-    
-    # Determine era
-    topic_era = getattr(generate_image, 'topic_era', 'MODERN')
-    
-    # VIRAL-OPTIMIZED PROMPTS: Scene-specific, attention-grabbing, contextually relevant
-    # Each prompt is tailored to the ACTUAL scene content for maximum engagement
-    
-    if topic_era == 'ANCIENT':
-        style_prompt = (
-            # CRITICAL: SFW AND CLOTHING FIRST - ABSOLUTE PRIORITY
-            f"SAFE FOR WORK, FULLY CLOTHED PEOPLE, "
-            f"everyone wearing complete period clothing, "
-            f"full robes and togas covering entire body, "
-            f"modest historical dress, NO NUDITY, "
-            f"professional family-friendly content, "
-            # Anatomy (with clothing)
-            f"professional photograph, correct human anatomy, "
-            f"beautiful faces with clear eyes nose mouth, "
-            f"normal hands with 5 fingers, proper proportions, "
-            f"realistic clothed people, "
-            # Scene content
-            f"{scene}, "
-            f"ancient Roman or Greek legal setting, "
-            f"judges and citizens in full traditional robes, "
-            f"detailed expressive faces, dignified poses, "
-            # Environment
-            f"magnificent ancient architecture, marble columns, "
-            f"stone temples, classical buildings, "
-            # Lighting
-            f"golden hour lighting, warm sunlight, cinematic, "
-            # Quality
-            f"photorealistic, ultra detailed, sharp focus, "
-            f"professional photography, 8k quality, "
-            f"National Geographic documentary style"
-        )
-    elif topic_era == 'MEDIEVAL':
-        style_prompt = (
-            # CRITICAL: SFW AND CLOTHING FIRST - ABSOLUTE PRIORITY
-            f"SAFE FOR WORK, FULLY CLOTHED PEOPLE, "
-            f"everyone wearing complete period clothing, "
-            f"full armor and ceremonial robes covering entire body, "
-            f"modest medieval dress, NO NUDITY, "
-            f"professional family-friendly content, "
-            # Anatomy (with clothing)
-            f"professional photograph, correct human anatomy, "
-            f"beautiful faces with clear eyes nose mouth, "
-            f"normal hands with 5 fingers, proper proportions, "
-            f"realistic clothed people, "
-            # Scene content
-            f"{scene}, "
-            f"medieval European castle legal setting, "
-            f"knights and nobles in full traditional dress, "
-            f"detailed expressive faces, dignified poses, "
-            # Environment
-            f"gothic castle, stone halls, stained glass windows, "
-            # Lighting
-            f"dramatic lighting, torch light, candlelight, atmospheric, "
-            # Quality
-            f"photorealistic, ultra detailed, sharp focus, "
-            f"professional photography, 8k quality, "
-            f"Game of Thrones TV show style"
-        )
-    else:  # MODERN
-        style_prompt = (
-            # CRITICAL: SFW AND CLOTHING FIRST - ABSOLUTE PRIORITY
-            f"SAFE FOR WORK, FULLY CLOTHED PEOPLE, "
-            f"everyone wearing complete business attire, "
-            f"full suits and professional clothing covering entire body, "
-            f"modest business dress, NO NUDITY, "
-            f"professional family-friendly content, "
-            # Anatomy (with clothing)
-            f"professional photograph, correct human anatomy, "
-            f"beautiful faces with clear eyes nose mouth, "
-            f"normal hands with 5 fingers, proper proportions, "
-            f"realistic clothed people, "
-            # Scene content
-            f"{scene}, "
-            f"modern professional legal setting, "
-            f"diverse lawyers and judges in full business suits, "
-            f"detailed expressive faces, professional poses, "
-            # Environment
-            f"contemporary courthouse, glass and marble, modern architecture, "
-            # Lighting
-            f"professional lighting, bright clean atmosphere, "
-            # Quality
-            f"photorealistic, ultra detailed, sharp focus, "
-            f"professional photography, 8k quality, "
-            f"corporate magazine style"
-        )
-    
-    # COMPREHENSIVE negative prompt - block ALL deformities AND NSFW
-    negative_prompt = (
-        # CRITICAL: NSFW blocking
-        "nude, nudity, naked, nsfw, exposed skin, bare chest, "
-        "bare body, undressed, topless, revealing, "
-        "inappropriate, adult content, sexual, "
-        # Face deformities
-        "deformed face, ugly face, distorted face, malformed face, "
-        "disfigured face, bad eyes, crossed eyes, missing eyes, extra eyes, "
-        "bad nose, missing nose, deformed mouth, bad teeth, "
-        "asymmetrical face, mutated face, "
-        # Body deformities
-        "deformed body, bad anatomy, wrong anatomy, extra limbs, "
-        "missing limbs, extra arms, extra legs, missing arms, missing legs, "
-        "bad hands, deformed hands, extra fingers, missing fingers, "
-        "fused fingers, mutated hands, poorly drawn hands, "
-        "bad feet, deformed feet, extra toes, missing toes, "
-        "malformed limbs, disfigured, mutation, mutated, "
-        "extra body parts, duplicate body parts, "
-        # Proportions
-        "bad proportions, long neck, long body, elongated, "
-        "stretched, distorted proportions, "
-        # Quality issues
-        "blurry, low quality, low resolution, pixelated, "
-        "grainy, jpeg artifacts, compression artifacts, "
-        # Style issues
-        "cartoon, anime, drawing, painting, illustration, "
-        "3d render, cgi, "
-        # Other
-        "watermark, text, signature, username, "
-        "cropped, cut off, out of frame"
-    )
-    
-    # Encode prompts
-    safe_prompt = quote(style_prompt)
-    safe_negative = quote(negative_prompt)
-    
-    # Use PAID API with Turbo model
-    url = (
-        f"https://gen.pollinations.ai/image/{safe_prompt}"
-        f"?width={IMAGE_WIDTH}&height={IMAGE_HEIGHT}"
-        f"&model={IMAGE_MODEL}"
-        f"&seed={seed}"
-        f"&nologo=true"
-        f"&nofeed=true"
-        f"&enhance=true"
-        f"&negative_prompt={safe_negative}"
-    )
-    
-    headers = {
-        "Authorization": f"Bearer {POLLINATIONS_API_KEY}"
-    }
+def download_image_from_drive(idx: int) -> Path:
+    """Pick a random image from Google Drive folder (weighted by least-used)."""
+    import json, random
+    from pathlib import Path
+    from google.oauth2 import service_account
+    from googleapiclient.discovery import build
+    from googleapiclient.http import MediaIoBaseDownload
 
-    out = IMAGES_DIR / f"scene_{idx:02d}.jpg"
-    out_upscaled = IMAGES_DIR / f"scene_{idx:02d}_hd.jpg"
-    print(f"[image] 🎬 Generating VIRAL {topic_era.lower()} image {idx+1}/{NUM_IMAGES}...")
-    print(f"[image] 📸 Scene: {scene[:70]}...")
-    
-    # Robust retry logic
-    max_retries = 5
-    retry_delays = [5, 10, 15, 30, 60]
-    
-    for attempt in range(max_retries):
-        try:
-            r = requests.get(url, headers=headers, timeout=90)
-            r.raise_for_status()
-            
-            # Validate image
-            if len(r.content) < 1000:
-                raise ValueError("Image too small")
-            
-            # Save directly as the final image (no upscaling needed)
-            out_upscaled.write_bytes(r.content)
-            print(f"[image] ✅ Image {idx+1} ready! ({len(r.content)//1024}KB)")
-            
-            time.sleep(2)
-            return out_upscaled
-            
-        except requests.exceptions.HTTPError as e:
-            status_code = e.response.status_code if e.response else "Unknown"
-            if attempt < max_retries - 1:
-                wait_time = retry_delays[attempt]
-                print(f"[image] ⚠️ HTTP {status_code}! Retry {attempt+2}/{max_retries} in {wait_time}s...")
-                time.sleep(wait_time)
-            else:
-                print(f"[image] ❌ Failed: HTTP {status_code}")
-                raise
-                
-        except Exception as e:
-            if attempt < max_retries - 1:
-                wait_time = retry_delays[attempt]
-                print(f"[image] ⚠️ Error: {str(e)[:50]}. Retry {attempt+2}/{max_retries} in {wait_time}s...")
-                time.sleep(wait_time)
-            else:
-                print(f"[image] ❌ Failed after {max_retries} attempts: {e}")
-                raise
-    
-    raise Exception(f"Image {idx+1} generation failed")
+    service_key = os.environ.get("GOOGLE_SERVICE_ACCOUNT_KEY")
+    folder_id = os.environ.get("GOOGLE_DRIVE_FOLDER_ID")
+
+    if not service_key:
+        raise ValueError("GOOGLE_SERVICE_ACCOUNT_KEY environment variable required")
+    if not folder_id:
+        raise ValueError("GOOGLE_DRIVE_FOLDER_ID environment variable required")
+
+    cred = service_account.Credentials.from_service_account_info(
+        json.loads(service_key),
+        scopes=["https://www.googleapis.com/auth/drive.readonly"]
+    )
+    service = build("drive", "v3", credentials=cred)
+
+    results = service.files().list(
+        q=f"'{folder_id}' in parents and (mimeType='image/png' or mimeType='image/jpeg' or mimeType='image/jpg' or mimeType='image/webp')",
+        fields="files(id, name)",
+        pageSize=1000
+    ).execute()
+    files = results.get("files", [])
+
+    if not files:
+        raise ValueError("No images found in Google Drive folder")
+
+    used_log = Path("used_images.json")
+    if used_log.exists():
+        with open(used_log) as f:
+            usage = json.load(f)
+    else:
+        usage = {}
+
+    weights = []
+    for f in files:
+        count = usage.get(f["id"], 0)
+        weights.append(max(1, 10 - count))
+
+    chosen = random.choices(files, weights=weights, k=1)[0]
+    print(f"[image] Downloading {chosen['name']} from Drive...")
+
+    output_path = Path(f"images/scene_{idx:02d}.jpg")
+    output_path.parent.mkdir(parents=True, exist_ok=True)
+
+    request = service.files().get_media(fileId=chosen["id"])
+    fh = open(output_path, "wb")
+    downloader = MediaIoBaseDownload(fh, request)
+    done = False
+    while not done:
+        status, done = downloader.next_chunk()
+    fh.close()
+
+    usage[chosen["id"]] = usage.get(chosen["id"], 0) + 1
+    with open(used_log, "w") as f:
+        json.dump(usage, f)
+
+    print(f"[image] Downloaded: {chosen['name']}")
+    return output_path
+
+def generate_image(scene: str, idx: int) -> Path:
+    """Download image from Google Drive instead of AI generation."""
+    return download_image_from_drive(idx)
 
 def generate_images(scenes: list):
     """Generate unique images for each scene SEQUENTIALLY (avoids rate limits)"""
@@ -722,11 +595,8 @@ def main():
     topic_file = OUTPUT_DIR / "topic.txt"
     topic_file.write_text(topic, encoding='utf-8')
     
-    # Extract era from topic for image styling
     if topic.startswith("[ANCIENT]"):
         topic_era = "ANCIENT"
-    elif topic.startswith("[MEDIEVAL]"):
-        topic_era = "MEDIEVAL"
     else:
         topic_era = "MODERN"
     
