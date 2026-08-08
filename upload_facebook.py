@@ -22,7 +22,7 @@ def upload_to_facebook(video_path, description):
     
     # Get credentials
     access_token = os.getenv('FB_ACCESS_TOKEN') or os.getenv('FACEBOOK_ACCESS_TOKEN')
-    page_id = os.getenv('FB_PAGE_ID')
+    page_id = os.getenv('FB_PAGE_ID') or os.getenv('FACEBOOK_PAGE_ID')
     
     if not access_token:
         error_msg = "âŒ FB_ACCESS_TOKEN not set in environment variables"
@@ -131,4 +131,5 @@ if __name__ == '__main__':
             print(f"\nâŒ Test failed: {e}")
     else:
         print(f"âŒ Video not found: {video_file}")
+
 
