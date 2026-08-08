@@ -2,6 +2,7 @@ import os, sys, glob
 from pathlib import Path
 from upload_instagram import upload_to_instagram
 from upload_facebook import upload_to_facebook
+from upload_to_youtube import upload_to_youtube
 
 def get_topic():
     """Read the current topic from output/topic.txt or used_topics.txt."""
@@ -56,14 +57,30 @@ def main():
     story = get_story()
     caption = build_caption(topic, story)
     print(f"Caption: {caption[:100]}...")
+
+    title = topic
     
-    print("\n1. Uploading to Instagram...")
+    # YouTube
+    if all([os.getenv('YT_CLIENT_ID'), os.getenv('YT_CLIENT_SECRET'), os.getenv('YT_REFRESH_TOKEN')]):
+        print("\n1. Uploading to YouTube...")
+        try:
+            tags = ['Law', 'Legal History', 'History', 'Education', 'Ancient Law', 'Ancient History', 'Shorts']
+            result = upload_to_youtube(latest_video, title, caption, tags)
+            print(f"YouTube: https://youtube.com/shorts/{result['id']}")
+        except Exception as e:
+            print(f"YouTube upload error: {e}")
+    else:
+        print("\nSkipping YouTube (credentials not set)")
+    
+    # Instagram
+    print("\n2. Uploading to Instagram...")
     try:
         upload_to_instagram(latest_video, caption=caption)
     except Exception as e:
         print(f"Instagram upload error: {e}")
     
-    print("\n2. Uploading to Facebook...")
+    # Facebook
+    print("\n3. Uploading to Facebook...")
     try:
         upload_to_facebook(latest_video, caption)
     except Exception as e:
