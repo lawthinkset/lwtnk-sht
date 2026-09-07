@@ -1,17 +1,24 @@
-﻿name: Daily Auto Shorts with YouTube Upload
+name: Daily Auto Shorts with YouTube Upload
 
 on:
   schedule:
     - cron: "30 16 * * *"     # 10:00 PM India time (4:30 PM UTC)
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   generate-and-upload:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     
     steps:
     - name: Checkout repo
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
 
     - name: Set up Python
       uses: actions/setup-python@v5
@@ -36,6 +43,8 @@ jobs:
         pip install -r requirements.txt
 
     - name: Check and generate topics if needed
+      env:
+        POLLINATIONS_API_KEY: ${{ secrets.POLLINATIONS_API_KEY }}
       run: |
         python generate_topics.py
 
@@ -75,4 +84,29 @@ jobs:
       run: |
         python upload_all_platforms.py
 
+    - name: Upload topic state artifact
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: topic-history-${{ github.run_number }}
+        path: |
+          topics.txt
+          used_topics.txt
+          output/topic.txt
+          output/story.txt
+        retention-days: 7
 
+    - name: Commit updated topics and history to repository
+      if: success()
+      run: |
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add -f topics.txt used_topics.txt used_images.json
+        if ! git diff --staged --quiet; then
+          git commit -m "Update topics and usage history - Run #${{ github.run_number }} [skip ci]"
+          git pull --rebase
+          git push
+          echo "Topics and history committed and pushed successfully!"
+        else
+          echo "No changes to commit"
+        fi

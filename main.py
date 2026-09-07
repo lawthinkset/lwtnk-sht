@@ -10,6 +10,7 @@ import requests
 import time
 from dotenv import load_dotenv
 from PIL import Image
+from generate_topics import check_and_update_topics, generate_new_topics
 
 # Load environment variables
 load_dotenv()
@@ -59,80 +60,78 @@ def ensure_dirs():
         f.unlink()
 
 def choose_topic_for_today():
-    """Select and consume a topic. Auto-generates new unique topics when running low."""
-    # Auto-replenish topics if low
-    try:
-        check_and_update_topics()
-    except Exception as e:
-        print(f"[topics] Warning: Could not auto-generate topics: {e}")
-
+    """Select and consume a unique topic. Auto-replenishes and guarantees no repeats."""
     topics_file = Path(TOPICS_FILE)
     used_topics_file = Path("used_topics.txt")
     
-    # Read available topics
+    # 1. Load used topics history
+    used_topics = set()
+    if used_topics_file.exists():
+        with open(used_topics_file, "r", encoding="utf-8") as f:
+            used_topics = set(line.strip() for line in f if line.strip())
+    normalized_used = {u.lower().strip() for u in used_topics}
+    print(f"[topics] 📜 Loaded {len(used_topics)} previously used topics from used_topics.txt")
+
+    # 2. Check and auto-update topics pool if needed
     try:
-        with open(topics_file, "r", encoding="utf-8") as f:
-            topics = [line.strip() for line in f if line.strip()]
-        print(f"[topics] 📚 Loaded topics: {len(topics)}")
+        check_and_update_topics(min_threshold=20, generate_count=50)
     except Exception as e:
-        print(f"[topics] ❌ Error reading {TOPICS_FILE}: {e}")
-        return "[ANCIENT] Roman Law Twelve Tables"
-    
-    # If running low on topics (< 50), generate more
-    if len(topics) < 50 and len(topics) >= 20:
-        print(f"[topics] ⚠️ Only {len(topics)} topics left. Pre-emptively generating more...")
+        print(f"[topics] ⚠️ Auto-update error: {e}")
+
+    # 3. Read available topics from topics.txt
+    raw_topics = []
+    if topics_file.exists():
+        with open(topics_file, "r", encoding="utf-8") as f:
+            raw_topics = [line.strip() for line in f if line.strip()]
+
+    # Filter out anything that was already used
+    available_topics = [t for t in raw_topics if t.lower() not in normalized_used]
+
+    # If still below 15, trigger emergency generation
+    if len(available_topics) < 15:
+        print(f"[topics] ⚠️ Only {len(available_topics)} unused topics left. Generating more...")
         try:
-            check_and_update_topics()
-            with open(topics_file, "r", encoding="utf-8") as f:
-                topics = [line.strip() for line in f if line.strip()]
+            more_topics = generate_new_topics(count=30, used_topics_set=used_topics)
+            for mt in more_topics:
+                if mt not in available_topics and mt.lower() not in normalized_used:
+                    available_topics.append(mt)
         except Exception as e:
-            print(f"[topics] ⚠️ Could not refill: {e}")
-    
-    if not topics:
-        print("[topics] ❌ No topics available! Using fallback.")
-        return "[ANCIENT] Roman Law Twelve Tables"
-    
-    # Always pick the first topic (guarantees uniqueness per run)
-    selected_topic = topics[0]
-    remaining_topics = topics[1:]
-    
-    print(f"[topics] 🎯 Selected: '{selected_topic}'")
-    print(f"[topics] 📊 Remaining: {len(remaining_topics)}")
-    
-    # Mark topic as used with verification
+            print(f"[topics] ⚠️ Emergency topic generation error: {e}")
+
+    if not available_topics:
+        print("[topics] ⚠️ No unused topics found! Generating emergency topic...")
+        try:
+            emergency = generate_new_topics(count=5, used_topics_set=used_topics)
+            available_topics = emergency if emergency else ["[ANCIENT] Code of Ur-Nammu Earliest Known Law Code"]
+        except Exception:
+            available_topics = ["[ANCIENT] Code of Ur-Nammu Earliest Known Law Code"]
+
+    # 4. Select the first unused topic
+    selected_topic = available_topics[0]
+    remaining_topics = available_topics[1:]
+
+    print(f"[topics] 🎯 Selected Topic: '{selected_topic}'")
+    print(f"[topics] 📊 Remaining unused topics: {len(remaining_topics)}")
+
+    # 5. Record topic in used_topics.txt immediately
     try:
         with open(used_topics_file, "a", encoding="utf-8") as f:
             f.write(f"{selected_topic}\n")
             f.flush()
-        print(f"[topics] ✅ Logged to used_topics.txt")
+        print(f"[topics] ✅ Recorded '{selected_topic}' in used_topics.txt")
     except Exception as e:
-        print(f"[topics] ⚠️ Could not log to used_topics.txt: {e}")
-    
-    # Remove used topic from topics.txt with verification
-    write_success = False
-    for attempt in range(3):
-        try:
-            with open(topics_file, "w", encoding="utf-8") as f:
-                f.write("\n".join(remaining_topics) + "\n")
-                f.flush()
-            
-            # Verify the write
-            with open(topics_file, "r", encoding="utf-8") as f:
-                verification = [line.strip() for line in f if line.strip()]
-            
-            if len(verification) != len(remaining_topics):
-                print(f"[topics] ⚠️ Verification failed (attempt {attempt+1}/3)")
-                continue
-            
-            write_success = True
-            print(f"[topics] ✅ Topic removed and verified")
-            break
-        except Exception as e:
-            print(f"[topics] ⚠️ Write error (attempt {attempt+1}/3): {e}")
-    
-    if not write_success:
-        print(f"[topics] ❌ Failed to save topics.txt!")
-    
+        print(f"[topics] ⚠️ Error recording to used_topics.txt: {e}")
+
+    # 6. Save remaining unused topics to topics.txt
+    try:
+        with open(topics_file, "w", encoding="utf-8") as f:
+            for t in remaining_topics:
+                f.write(f"{t}\n")
+            f.flush()
+        print(f"[topics] ✅ topics.txt updated with {len(remaining_topics)} remaining topics")
+    except Exception as e:
+        print(f"[topics] ❌ Error writing remaining topics to topics.txt: {e}")
+
     return selected_topic
 
 def generate_story_with_pollinations(topic: str) -> str:
@@ -149,11 +148,18 @@ def generate_story_with_pollinations(topic: str) -> str:
             "Explain the ancient law clearly with historical context and interesting facts. "
             "Use engaging storytelling and vivid descriptions. No headings or titles."
         )
+    elif topic.startswith("[MEDIEVAL]"):
+        system = (
+            "You are a medieval legal historian specializing in medieval law and trials. "
+            "Write a fascinating explanation in 30 seconds (80-130 words) in English. "
+            "Explain the medieval law, charter, or legal practice clearly with historical context and intriguing facts. "
+            "Use engaging storytelling and vivid descriptions. No headings or titles."
+        )
     else:
         system = (
-            "You are a legal expert specializing in modern laws worldwide. "
-            "Write a clear explanation in 30 seconds (80-130 words) in English. "
-            "Explain the modern law with current context and practical implications. "
+            "You are a legal historian and expert. "
+            "Write a clear, fascinating explanation in 30 seconds (80-130 words) in English. "
+            "Explain this legal topic clearly with historical context and practical implications. "
             "Use accessible language and real-world examples. No headings or titles."
         )
 
@@ -463,11 +469,9 @@ def create_animated_slideshow(image_paths):
         
         # Alternate between zoom in and zoom out for variety
         if i % 2 == 0:
-            # Zoom in effect
             zoom_start = 1.0
             zoom_end = 1.3
         else:
-            # Zoom out effect  
             zoom_start = 1.3
             zoom_end = 1.0
         
@@ -483,8 +487,8 @@ def create_animated_slideshow(image_paths):
             ),
             "-t", str(per_image),
             "-c:v", "libx264",
-            "-preset", "slow",  # Better quality
-            "-crf", "18",  # High quality (lower = better, 18-23 is good)
+            "-preset", "slow",
+            "-crf", "18",
             "-pix_fmt", "yuv420p",
             str(clip_file)
         ]
@@ -492,7 +496,6 @@ def create_animated_slideshow(image_paths):
         result = subprocess.run(cmd, capture_output=True, text=True)
         if result.returncode != 0:
             print(f"[video] Zoom failed for clip {i+1}, using fallback...")
-            # Fallback: simple static with slight movement
             cmd_fallback = [
                 "ffmpeg", "-y",
                 "-loop", "1",
@@ -533,7 +536,6 @@ def add_subtitles():
     """Overlay ASS subtitles on video."""
     print("[video] Adding UPPERCASE subtitles...")
     
-    # Windows path needs special handling for FFmpeg filter
     subs_path = str(SUBS_FILE.resolve()).replace("\\", "/").replace(":", "\\:")
     
     cmd = [
@@ -554,7 +556,6 @@ def merge_audio():
     print("[merge] Merging audio with background music...")
     
     if MUSIC_FILE.exists():
-        # Merge narration + background music (music at lower volume)
         cmd = [
             "ffmpeg", "-y",
             "-i", str(VIDEO_WITH_SUBS),
@@ -591,12 +592,14 @@ def main():
     print(f"=== Topic: {topic}")
     print("=" * 60)
     
-    # Save topic for YouTube title generation
+    # Save topic for title generation
     topic_file = OUTPUT_DIR / "topic.txt"
     topic_file.write_text(topic, encoding='utf-8')
     
     if topic.startswith("[ANCIENT]"):
         topic_era = "ANCIENT"
+    elif topic.startswith("[MEDIEVAL]"):
+        topic_era = "MEDIEVAL"
     else:
         topic_era = "MODERN"
     
@@ -616,7 +619,7 @@ def main():
     # 4. Generate narration with TTS
     generate_tts(story)
     
-    # 5. Generate word-level UPPERCASE subtitles with Whisper
+    # 5. Generate word-level UPPERCASE subtitles with Vosk
     generate_word_subtitles()
     
     # 6. Create animated slideshow with Ken Burns effect
