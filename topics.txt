@@ -1,4 +1,3 @@
-[MEDIEVAL] Magna Carta Habeas Corpus Origins
 [ANCIENT] Ancient Indian Manusmriti Laws
 [ANCIENT] Persian Empire Legal System
 [MEDIEVAL] Medieval Punishment Methods
@@ -17,3 +16,53 @@
 [ANCIENT] Roman Citizenship Legal Rights
 [MEDIEVAL] Medieval Labor Laws
 [ANCIENT] Ancient Mesopotamian Court System
+[ANCIENT] Sumerian Uruk ordinances and temple courts
+[ANCIENT] Babylonian Code of Hammurabi lex talionis
+[ANCIENT] Babylonian royal edicts during popular uprisings
+[ANCIENT] Assyrian siege law and hostage regulations
+[ANCIENT] Athenian graphē paranomōn public indictment procedure
+[ANCIENT] Roman Twelve Tables: Twelvefold civil protections
+[ANCIENT] Roman praetor edicts shaping ius honorarium
+[ANCIENT] Roman jurists’ responsa and legal authority
+[ANCIENT] Egyptian Ma’at: divine-backed criminal adjudication
+[ANCIENT] Ptolemaic decrees and court petition practice
+[ANCIENT] Persian satrapy justice and tribute disputes
+[ANCIENT] Shang dynasty punishments for sacrilege crimes
+[ANCIENT] Zhou legal traditions: ritual basis for law
+[ANCIENT] Qin dynasty legalism and punishment registers
+[ANCIENT] Han dynasty commutation and administrative prosecutions
+[ANCIENT] Mauryan Arthashastra: statecraft and sentencing
+[ANCIENT] Vedic diya and compensation for harm
+[ANCIENT] Gupta-era customary law in village courts
+[ANCIENT] Mauryan tax law and revenue enforcement
+[ANCIENT] Hittite law: ordeal and oaths in trials
+[ANCIENT] Jewish halakhic courts shaping medieval rabbinism
+[ANCIENT] Neo-Sumerian adoption contracts and inheritance rules
+[ANCIENT] Minoan reconstructions: property disputes and seals
+[ANCIENT] Carthaginian maritime law and shipping penalties
+[MEDIEVAL] Justinian’s Corpus Juris Civilis consolidation
+[MEDIEVAL] Byzantine ekloga: imperial reforms and penalties
+[MEDIEVAL] Constantinople patent grants and monopoly regulation
+[MEDIEVAL] The Nicaean Creed-era canon law enforcement
+[MEDIEVAL] Anglo-Saxon wergild compensation for homicide
+[MEDIEVAL] Danelaw juries and ordeal in England
+[MEDIEVAL] Assize of Clarendon: criminal procedure innovations
+[MEDIEVAL] Trial by battle in medieval English courts
+[MEDIEVAL] Norse þing proceedings and oath-swearing law
+[MEDIEVAL] Icelandic Grágás: legal code of clans
+[MEDIEVAL] Frankish Salian law and composition fines
+[MEDIEVAL] Capitulary councils regulating local courts
+[MEDIEVAL] Carolingian missi dominici judicial oversight
+[MEDIEVAL] Visigothic Liber Iudiciorum: mixed populations
+[MEDIEVAL] Islamic caliphate qadi courts and waqf disputes
+[MEDIEVAL] Sharia evidence rules for witness testimony
+[MEDIEVAL] Abbasid inquest: protocol for accusations
+[MEDIEVAL] Fatimid da’wah records and legal documentation
+[MEDIEVAL] Almohad reforms and contract formalities
+[MEDIEVAL] Mongol yasa: administrative justice and discipline
+[MEDIEVAL] Mongol yam surveillance and legal jurisdiction
+[MEDIEVAL] Chinese Song dynasty criminal code administration
+[MEDIEVAL] Tangut legal traditions and frontier adjudication
+[MEDIEVAL] Medieval Tibetan law: civil penalties and monasteries
+[MEDIEVAL] Ethiopian Fetha Negest royal legal synthesis
+[MEDIEVAL] Mali empire customary law and judicial assemblies
