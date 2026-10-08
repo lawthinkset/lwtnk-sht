@@ -36,3 +36,4 @@
 [ANCIENT] Sumerian Uruk ordinances and temple courts
 [ANCIENT] Babylonian Code of Hammurabi lex talionis
 [ANCIENT] Babylonian royal edicts during popular uprisings
+[ANCIENT] Assyrian siege law and hostage regulations
