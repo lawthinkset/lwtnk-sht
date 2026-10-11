@@ -4,6 +4,16 @@ on:
   schedule:
     - cron: "30 16 * * *"     # 10:00 PM India time (4:30 PM UTC)
   workflow_dispatch:
+    inputs:
+      upload_youtube:
+        description: 'Upload to YouTube? (auto = alternate days, true = force yes, false = force skip)'
+        required: false
+        default: 'auto'
+        type: choice
+        options:
+          - auto
+          - 'true'
+          - 'false'
 
 permissions:
   contents: write
@@ -56,8 +66,31 @@ jobs:
       run: |
         python main.py
 
+    - name: 📅 Check YouTube upload schedule (Alternate days)
+      id: yt_schedule
+      run: |
+        INPUT_CHOICE="${{ github.event.inputs.upload_youtube }}"
+        if [ "$INPUT_CHOICE" = "true" ]; then
+          echo "should_upload=true" >> "$GITHUB_OUTPUT"
+          echo "Manual override: YouTube upload forced to TRUE."
+        elif [ "$INPUT_CHOICE" = "false" ]; then
+          echo "should_upload=false" >> "$GITHUB_OUTPUT"
+          echo "Manual override: YouTube upload forced to FALSE."
+        else
+          DAY_OF_YEAR=$(date -u +%-j)
+          echo "Current UTC Day of Year: $DAY_OF_YEAR"
+          if [ $(( 10#$DAY_OF_YEAR % 2 )) -ne 0 ]; then
+            echo "should_upload=true" >> "$GITHUB_OUTPUT"
+            echo "✅ Today is a scheduled YouTube upload day (Day $DAY_OF_YEAR)."
+          else
+            echo "should_upload=false" >> "$GITHUB_OUTPUT"
+            echo "⏸️ Today is an alternate off-day for YouTube (Day $DAY_OF_YEAR). Skipping YouTube upload (Facebook will still upload)."
+          fi
+        fi
+
     - name: Upload to all platforms
       env:
+        UPLOAD_YOUTUBE: ${{ steps.yt_schedule.outputs.should_upload }}
         # YouTube
         YT_CLIENT_ID: ${{ secrets.YT_CLIENT_ID }}
         YT_CLIENT_SECRET: ${{ secrets.YT_CLIENT_SECRET }}

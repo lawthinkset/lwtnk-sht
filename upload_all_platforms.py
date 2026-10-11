@@ -61,7 +61,10 @@ def main():
     title = topic
     
     # YouTube
-    if all([os.getenv('YT_CLIENT_ID'), os.getenv('YT_CLIENT_SECRET'), os.getenv('YT_REFRESH_TOKEN')]):
+    upload_yt = os.getenv("UPLOAD_YOUTUBE", "true").lower()
+    if upload_yt in ("false", "0", "no"):
+        print("\n⏸️ Skipping YouTube upload (UPLOAD_YOUTUBE=false). Instagram & Facebook will proceed.")
+    elif all([os.getenv('YT_CLIENT_ID'), os.getenv('YT_CLIENT_SECRET'), os.getenv('YT_REFRESH_TOKEN')]):
         print("\n1. Uploading to YouTube...")
         try:
             tags = ['Law', 'Legal History', 'History', 'Education', 'Ancient Law', 'Ancient History', 'Shorts']
