@@ -42,3 +42,4 @@
 [ANCIENT] Roman praetor edicts shaping ius honorarium
 [ANCIENT] Roman jurists’ responsa and legal authority
 [ANCIENT] Egyptian Ma’at: divine-backed criminal adjudication
+[ANCIENT] Ptolemaic decrees and court petition practice
