@@ -164,7 +164,7 @@ def generate_story_with_pollinations(topic: str) -> str:
         )
 
     payload = {
-        "model": "openai",
+        "model": "openai/gpt-5.4-nano",
         "messages": [
             {"role": "system", "content": system},
             {"role": "user", "content": f"Topic: {clean_topic}. Explain this law with historical context."}
