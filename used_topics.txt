@@ -60,3 +60,4 @@
 [MEDIEVAL] Justinian’s Corpus Juris Civilis consolidation
 [MEDIEVAL] Byzantine ekloga: imperial reforms and penalties
 [MEDIEVAL] Constantinople patent grants and monopoly regulation
+[MEDIEVAL] The Nicaean Creed-era canon law enforcement
