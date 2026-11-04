@@ -61,3 +61,4 @@
 [MEDIEVAL] Byzantine ekloga: imperial reforms and penalties
 [MEDIEVAL] Constantinople patent grants and monopoly regulation
 [MEDIEVAL] The Nicaean Creed-era canon law enforcement
+[MEDIEVAL] Anglo-Saxon wergild compensation for homicide
