@@ -66,3 +66,4 @@
 [MEDIEVAL] Assize of Clarendon: criminal procedure innovations
 [MEDIEVAL] Trial by battle in medieval English courts
 [MEDIEVAL] Norse þing proceedings and oath-swearing law
+[MEDIEVAL] Icelandic Grágás: legal code of clans
