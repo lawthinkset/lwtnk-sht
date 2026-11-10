@@ -1,4 +1,3 @@
-[MEDIEVAL] Frankish Salian law and composition fines
 [MEDIEVAL] Capitulary councils regulating local courts
 [MEDIEVAL] Carolingian missi dominici judicial oversight
 [MEDIEVAL] Visigothic Liber Iudiciorum: mixed populations
