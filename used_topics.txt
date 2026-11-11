@@ -68,3 +68,4 @@
 [MEDIEVAL] Norse þing proceedings and oath-swearing law
 [MEDIEVAL] Icelandic Grágás: legal code of clans
 [MEDIEVAL] Frankish Salian law and composition fines
+[MEDIEVAL] Capitulary councils regulating local courts
