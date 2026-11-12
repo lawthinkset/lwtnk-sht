@@ -69,3 +69,4 @@
 [MEDIEVAL] Icelandic Grágás: legal code of clans
 [MEDIEVAL] Frankish Salian law and composition fines
 [MEDIEVAL] Capitulary councils regulating local courts
+[MEDIEVAL] Carolingian missi dominici judicial oversight
