@@ -1,4 +1,3 @@
-[MEDIEVAL] Visigothic Liber Iudiciorum: mixed populations
 [MEDIEVAL] Islamic caliphate qadi courts and waqf disputes
 [MEDIEVAL] Sharia evidence rules for witness testimony
 [MEDIEVAL] Abbasid inquest: protocol for accusations
