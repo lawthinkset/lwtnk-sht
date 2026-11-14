@@ -71,3 +71,4 @@
 [MEDIEVAL] Capitulary councils regulating local courts
 [MEDIEVAL] Carolingian missi dominici judicial oversight
 [MEDIEVAL] Visigothic Liber Iudiciorum: mixed populations
+[MEDIEVAL] Islamic caliphate qadi courts and waqf disputes
