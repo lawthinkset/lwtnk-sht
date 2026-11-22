@@ -79,3 +79,4 @@
 [MEDIEVAL] Mongol yasa: administrative justice and discipline
 [MEDIEVAL] Mongol yam surveillance and legal jurisdiction
 [MEDIEVAL] Chinese Song dynasty criminal code administration
+[MEDIEVAL] Tangut legal traditions and frontier adjudication
