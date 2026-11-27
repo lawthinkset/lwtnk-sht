@@ -83,3 +83,4 @@
 [MEDIEVAL] Medieval Tibetan law: civil penalties and monasteries
 [MEDIEVAL] Ethiopian Fetha Negest royal legal synthesis
 [MEDIEVAL] Mali empire customary law and judicial assemblies
+[ANCIENT] Sumerian city-state law codes and ordeals
