@@ -84,3 +84,4 @@
 [MEDIEVAL] Ethiopian Fetha Negest royal legal synthesis
 [MEDIEVAL] Mali empire customary law and judicial assemblies
 [ANCIENT] Sumerian city-state law codes and ordeals
+[ANCIENT] Babylonian Lipit-Ishtar landlord protections and fines
